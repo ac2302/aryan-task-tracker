@@ -180,15 +180,16 @@ button.icon-only {
 }
 
 .calendar td {
-  padding: 0.5rem;
+  padding: 0.25rem;
   text-align: center;
   border: 1px solid var(--border-color);
   cursor: pointer;
   position: relative;
-  height: 4.5rem;
+  height: 5rem;
   vertical-align: top;
   transition: all 0.2s ease;
   font-size: 0.875rem;
+  overflow: hidden;
 }
 
 .calendar td:hover {
@@ -197,15 +198,22 @@ button.icon-only {
 
 .calendar td.today {
   background-color: rgba(59, 130, 246, 0.15);
-  font-weight: 600;
   color: var(--primary-color);
+}
+
+.calendar td.today .day-number {
+  font-weight: 600;
 }
 
 .calendar td.selected {
   background-color: rgba(59, 130, 246, 0.25);
-  font-weight: 600;
   color: var(--text-color);
   border: 2px solid var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+.calendar td.selected .day-number {
+  font-weight: 600;
 }
 
 .calendar td.other-month {
@@ -213,14 +221,38 @@ button.icon-only {
   background-color: rgba(30, 41, 59, 0.3);
 }
 
+.cell-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  padding: 0.25rem;
+}
+
+.day-number {
+  font-weight: 500;
+  text-align: left;
+  margin-bottom: 0.25rem;
+}
+
+.time-display {
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-top: auto;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  background-color: rgba(59, 130, 246, 0.1);
+  border-radius: 4px;
+  padding: 0.1rem 0.25rem;
+}
+
 .task-indicator {
-  position: absolute;
-  bottom: 5px;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: center;
   gap: 3px;
+  margin-top: auto;
+  margin-bottom: 0.1rem;
 }
 
 .task-dot {
@@ -228,6 +260,7 @@ button.icon-only {
   height: 6px;
   border-radius: 50%;
   background-color: var(--accent-color);
+  box-shadow: 0 0 2px rgba(245, 158, 11, 0.5);
 }
 
 .tasks-header {

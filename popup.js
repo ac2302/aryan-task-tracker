@@ -113,6 +113,52 @@ function generateCalendar() {
 
   let dayCount = 0;
 
+  // Helper function to calculate total time for a day
+  function calculateDayTotalTime(dateKey) {
+    if (!state.tasks[dateKey] || !state.tasks[dateKey].length) return 0;
+    
+    let totalMs = 0;
+    
+    state.tasks[dateKey].forEach(task => {
+      // Calculate tracked time
+      let tracked = 0;
+      let lastStart = null;
+      
+      if (task.timeEntries?.length) {
+        task.timeEntries.forEach(entry => {
+          if (entry.type === "start") {
+            lastStart = entry.time;
+          } else if (entry.type === "stop" && lastStart) {
+            tracked += entry.time.getTime() - lastStart.getTime();
+            lastStart = null;
+          }
+        });
+        
+        // If task is still running
+        const last = task.timeEntries[task.timeEntries.length - 1];
+        if (last && last.type === "start") {
+          tracked += new Date().getTime() - last.time.getTime();
+        }
+      }
+      
+      // Add manual time adjustments
+      const manualAdded = task.manualTimeAdded || 0;
+      const manualRemoved = task.manualTimeRemoved || 0;
+      totalMs += Math.max(0, tracked + manualAdded - manualRemoved);
+    });
+    
+    return totalMs;
+  }
+  
+  // Helper function to format time in hh:mm format
+  function formatTimeHHMM(ms) {
+    if (!ms) return "00:00";
+    const totalMinutes = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
   for (let i = 0; i < grandTotal / 7; i++) {
     const row = document.createElement("tr");
     for (let j = 0; j < 7; j++) {
@@ -135,8 +181,18 @@ function generateCalendar() {
         cellDay = dayCount - cellsBefore + 1;
         cellDate = new Date(year, month, cellDay);
       }
-
-      cell.textContent = cellDay;
+      
+      // Create a structured cell content
+      const cellContent = document.createElement("div");
+      cellContent.className = "cell-content";
+      
+      // Add day number
+      const dayNumber = document.createElement("div");
+      dayNumber.className = "day-number";
+      dayNumber.textContent = cellDay;
+      cellContent.appendChild(dayNumber);
+      
+      cell.appendChild(cellContent);
       cell.dataset.date = formatDate(cellDate);
 
       if (
@@ -151,6 +207,14 @@ function generateCalendar() {
 
       const dateKey = formatDate(cellDate);
       if (state.tasks[dateKey]?.length) {
+        // Calculate and display total time
+        const totalTime = calculateDayTotalTime(dateKey);
+        const timeDisplay = document.createElement("div");
+        timeDisplay.className = "time-display";
+        timeDisplay.textContent = formatTimeHHMM(totalTime);
+        cellContent.appendChild(timeDisplay);
+        
+        // Add task indicators
         const indicator = document.createElement("div");
         indicator.className = "task-indicator";
         const count = Math.min(state.tasks[dateKey].length, 3);
@@ -159,7 +223,7 @@ function generateCalendar() {
           dot.className = "task-dot";
           indicator.appendChild(dot);
         }
-        cell.appendChild(indicator);
+        cellContent.appendChild(indicator);
       }
 
       cell.addEventListener("click", () => {
