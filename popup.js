@@ -116,16 +116,16 @@ function generateCalendar() {
   // Helper function to calculate total time for a day
   function calculateDayTotalTime(dateKey) {
     if (!state.tasks[dateKey] || !state.tasks[dateKey].length) return 0;
-    
+
     let totalMs = 0;
-    
-    state.tasks[dateKey].forEach(task => {
+
+    state.tasks[dateKey].forEach((task) => {
       // Calculate tracked time
       let tracked = 0;
       let lastStart = null;
-      
+
       if (task.timeEntries?.length) {
-        task.timeEntries.forEach(entry => {
+        task.timeEntries.forEach((entry) => {
           if (entry.type === "start") {
             lastStart = entry.time;
           } else if (entry.type === "stop" && lastStart) {
@@ -133,30 +133,33 @@ function generateCalendar() {
             lastStart = null;
           }
         });
-        
+
         // If task is still running
         const last = task.timeEntries[task.timeEntries.length - 1];
         if (last && last.type === "start") {
           tracked += new Date().getTime() - last.time.getTime();
         }
       }
-      
+
       // Add manual time adjustments
       const manualAdded = task.manualTimeAdded || 0;
       const manualRemoved = task.manualTimeRemoved || 0;
       totalMs += Math.max(0, tracked + manualAdded - manualRemoved);
     });
-    
+
     return totalMs;
   }
-  
+
   // Helper function to format time in hh:mm format
   function formatTimeHHMM(ms) {
     if (!ms) return "00:00";
     const totalMinutes = Math.floor(ms / 60000);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}`;
   }
 
   for (let i = 0; i < grandTotal / 7; i++) {
@@ -181,17 +184,17 @@ function generateCalendar() {
         cellDay = dayCount - cellsBefore + 1;
         cellDate = new Date(year, month, cellDay);
       }
-      
+
       // Create a structured cell content
       const cellContent = document.createElement("div");
       cellContent.className = "cell-content";
-      
+
       // Add day number
       const dayNumber = document.createElement("div");
       dayNumber.className = "day-number";
       dayNumber.textContent = cellDay;
       cellContent.appendChild(dayNumber);
-      
+
       cell.appendChild(cellContent);
       cell.dataset.date = formatDate(cellDate);
 
@@ -213,7 +216,7 @@ function generateCalendar() {
         timeDisplay.className = "time-display";
         timeDisplay.textContent = formatTimeHHMM(totalTime);
         cellContent.appendChild(timeDisplay);
-        
+
         // Add task indicators
         const indicator = document.createElement("div");
         indicator.className = "task-indicator";
@@ -321,17 +324,17 @@ function renderTask(task, index) {
 
   const header = document.createElement("div");
   header.className = "task-header";
-  
+
   // Task title with edit icon
   const titleContainer = document.createElement("div");
   titleContainer.style.display = "flex";
   titleContainer.style.alignItems = "center";
   titleContainer.style.gap = "8px";
-  
+
   const title = document.createElement("div");
   title.className = "task-title";
   title.textContent = task.title;
-  
+
   const editIcon = document.createElement("i");
   editIcon.className = "fas fa-edit";
   editIcon.style.cursor = "pointer";
@@ -342,7 +345,7 @@ function renderTask(task, index) {
     e.stopPropagation();
     editTaskTitle(index, task.title);
   });
-  
+
   const copyIcon = document.createElement("i");
   copyIcon.className = "fas fa-copy";
   copyIcon.style.cursor = "pointer";
@@ -351,59 +354,62 @@ function renderTask(task, index) {
   copyIcon.title = "Copy task details";
   copyIcon.addEventListener("click", (e) => {
     e.stopPropagation();
-    
+
     // Format the time string
     const hours = Math.floor(total / 3600000);
     const minutes = Math.floor((total % 3600000) / 60000);
-    
-    const timeString = 
-      (hours ? `${hours} hour${hours > 1 ? 's' : ''}` : '') +
-      (hours && minutes ? ', ' : '') +
-      (minutes ? `${minutes} minute${minutes > 1 ? 's' : ''}` : '0 minutes');
-    
+
+    const timeString =
+      (hours ? `${hours} hour${hours > 1 ? "s" : ""}` : "") +
+      (hours && minutes ? ", " : "") +
+      (minutes ? `${minutes} minute${minutes > 1 ? "s" : ""}` : "0 minutes");
+
     const textToCopy = `${task.title}: ${timeString}`;
-    
+
     navigator.clipboard.writeText(textToCopy).then(() => {
       // Show a brief notification
-      const notification = document.createElement('div');
-      notification.textContent = 'Copied to clipboard!';
-      notification.style.position = 'fixed';
-      notification.style.bottom = '20px';
-      notification.style.right = '20px';
-      notification.style.backgroundColor = 'var(--card-background)';
-      notification.style.color = 'var(--text-color)';
-      notification.style.padding = '10px 20px';
-      notification.style.borderRadius = '5px';
-      notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-      notification.style.zIndex = '1000';
+      const notification = document.createElement("div");
+      notification.textContent = "Copied to clipboard!";
+      notification.style.position = "fixed";
+      notification.style.bottom = "20px";
+      notification.style.right = "20px";
+      notification.style.backgroundColor = "var(--card-background)";
+      notification.style.color = "var(--text-color)";
+      notification.style.padding = "10px 20px";
+      notification.style.borderRadius = "5px";
+      notification.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+      notification.style.zIndex = "1000";
       document.body.appendChild(notification);
-      
+
       setTimeout(() => {
         notification.remove();
       }, 2000);
     });
   });
-  
+
   titleContainer.appendChild(title);
   titleContainer.appendChild(editIcon);
   titleContainer.appendChild(copyIcon);
-  
+
   const timeEl = document.createElement("div");
   timeEl.className = "task-time";
   timeEl.textContent = formatDuration(total);
-  
+
   header.appendChild(titleContainer);
   header.appendChild(timeEl);
-  
+
   // Set up live timer update if task is running
   if (running && lastStart) {
     const intervalId = setInterval(() => {
       const now = new Date().getTime();
       const updatedTracked = tracked + (now - lastStart.getTime());
-      const updatedTotal = Math.max(0, updatedTracked + manualAdded - manualRemoved);
-      
+      const updatedTotal = Math.max(
+        0,
+        updatedTracked + manualAdded - manualRemoved
+      );
+
       // Get the timeEl reference again in case DOM has changed
-      const timeElement = taskItem.querySelector('.task-time');
+      const timeElement = taskItem.querySelector(".task-time");
       if (timeElement) {
         timeElement.textContent = formatDuration(updatedTotal);
       } else {
@@ -411,7 +417,7 @@ function renderTask(task, index) {
         clearInterval(intervalId);
       }
     }, 1000); // Update every second
-    
+
     // Store interval ID to clear it when view is updated
     taskItem.dataset.intervalId = intervalId;
   }
@@ -665,7 +671,11 @@ function renderTimeHistory(task, taskIndex) {
 
 function editTaskTitle(taskIndex, currentTitle) {
   const newTitle = prompt("Edit task name:", currentTitle);
-  if (newTitle !== null && newTitle.trim() !== "" && newTitle !== currentTitle) {
+  if (
+    newTitle !== null &&
+    newTitle.trim() !== "" &&
+    newTitle !== currentTitle
+  ) {
     const dateKey = formatDate(state.selectedDate);
     state.tasks[dateKey][taskIndex].title = newTitle.trim();
     saveState();
@@ -913,7 +923,7 @@ function addEventListeners() {
     .addEventListener("click", closeRemoveHoursModal);
   document
     .getElementById("save-remove-hours")
-    .addEventListener("click", saveRemoveHours);
+    ?.addEventListener("click", saveRemoveHours);
 
   document
     .getElementById("close-tracking-modal")
