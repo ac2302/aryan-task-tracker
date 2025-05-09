@@ -394,6 +394,27 @@ function renderTask(task, index) {
   
   header.appendChild(titleContainer);
   header.appendChild(timeEl);
+  
+  // Set up live timer update if task is running
+  if (running && lastStart) {
+    const intervalId = setInterval(() => {
+      const now = new Date().getTime();
+      const updatedTracked = tracked + (now - lastStart.getTime());
+      const updatedTotal = Math.max(0, updatedTracked + manualAdded - manualRemoved);
+      
+      // Get the timeEl reference again in case DOM has changed
+      const timeElement = taskItem.querySelector('.task-time');
+      if (timeElement) {
+        timeElement.textContent = formatDuration(updatedTotal);
+      } else {
+        // If element doesn't exist anymore, clear the interval
+        clearInterval(intervalId);
+      }
+    }, 1000); // Update every second
+    
+    // Store interval ID to clear it when view is updated
+    taskItem.dataset.intervalId = intervalId;
+  }
 
   // Actions
   const actions = document.createElement("div");
