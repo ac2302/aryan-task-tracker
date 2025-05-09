@@ -32,8 +32,8 @@ body {
   min-height: 100vh;
 
   /* popup height */
-  height: 642px;
-  width: 700px;
+  height: 600px;
+  width: 685px;
 }
 
 header {
@@ -165,8 +165,14 @@ button.icon-only {
 
 .calendar {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   border-spacing: 0;
+}
+
+.calendar th,
+.calendar td {
+  width: calc(100% / 7);
 }
 
 .calendar th {
