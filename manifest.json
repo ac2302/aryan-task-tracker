@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Aryan's Task Tracker",
+  "version": "1.0",
+  "description": "A simple task tracker with calendar and time tracking.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "permissions": ["storage"]
+}

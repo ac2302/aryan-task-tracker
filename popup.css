@@ -1,0 +1,575 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --primary-color: #3b82f6; /* Blue */
+  --primary-hover: #2563eb; /* Darker blue */
+  --secondary-color: #475569; /* Slate gray */
+  --accent-color: #f59e0b; /* Amber */
+  --success-color: #10b981; /* Green */
+  --danger-color: #ef4444; /* Red */
+  --background-color: #0f172a; /* Dark blue/black */
+  --card-background: #1e293b; /* Slate dark */
+  --text-color: #f1f5f9; /* Light gray text */
+  --text-secondary: #cbd5e1; /* Lighter gray text */
+  --text-muted: #94a3b8; /* Muted text */
+  --border-color: #334155; /* Border color */
+  --hover-color: #1e40af; /* Hover color */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: "Inter", sans-serif;
+  padding: 0;
+  line-height: 1.5;
+  margin: 0;
+  min-height: 100vh;
+
+  /* popup height */
+  height: 642px;
+  width: 700px;
+}
+
+header {
+  background-color: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+header h1 {
+  color: var(--text-color);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+header h1:before {
+  content: "⏱️";
+  font-size: 1.5rem;
+}
+
+.container {
+  display: flex;
+  max-width: 1400px;
+  margin: 2rem auto;
+  gap: 2rem;
+  padding: 0 2rem;
+}
+
+.calendar-container,
+.tasks-container {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.calendar-container {
+  flex: 1.2;
+  min-width: 380px;
+}
+
+.tasks-container {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.calendar-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button.secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+}
+
+button.secondary:hover {
+  filter: brightness(1.1);
+}
+
+button.accent {
+  background-color: var(--accent-color);
+  color: #000;
+}
+
+button.danger {
+  background-color: var(--danger-color);
+}
+
+button.success {
+  background-color: var(--success-color);
+}
+
+button.icon-only {
+  padding: 0.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  justify-content: center;
+}
+
+.calendar {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.calendar th {
+  padding: 1rem 0.5rem;
+  text-align: center;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.calendar td {
+  padding: 0.5rem;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  position: relative;
+  height: 4.5rem;
+  vertical-align: top;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.calendar td:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.calendar td.today {
+  background-color: rgba(59, 130, 246, 0.15);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.calendar td.selected {
+  background-color: rgba(59, 130, 246, 0.25);
+  font-weight: 600;
+  color: var(--text-color);
+  border: 2px solid var(--primary-color);
+}
+
+.calendar td.other-month {
+  color: var(--text-muted);
+  background-color: rgba(30, 41, 59, 0.3);
+}
+
+.task-indicator {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+
+.task-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-color);
+}
+
+.tasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tasks-date {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.add-task-form {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(30, 41, 59, 0.3);
+}
+
+.add-task-form input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: rgba(15, 23, 42, 0.5);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.add-task-form input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.task-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0;
+}
+
+.task-item {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.task-item:hover {
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.task-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.task-time {
+  color: var(--text-secondary);
+  font-weight: 500;
+  background-color: rgba(15, 23, 42, 0.5);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-time:before {
+  content: "⏱️";
+  font-size: 0.875rem;
+}
+
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-history {
+  margin-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.history-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.history-entry:last-child {
+  border-bottom: none;
+}
+
+.history-entry button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background-color: var(--card-background);
+  color: var(--text-color);
+  padding: 2rem;
+  border-radius: 1rem;
+  width: 450px;
+  max-width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(0);
+  animation: modal-appear 0.3s ease-out;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.close-modal {
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.close-modal:hover {
+  color: var(--text-color);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="time"],
+.form-group select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: rgba(15, 23, 42, 0.5);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.toggle-history {
+  cursor: pointer;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-history:before {
+  content: "📋";
+  font-size: 0.875rem;
+}
+
+.toggle-history:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Notes Section Styles */
+.toggle-notes-btn {
+  cursor: pointer;
+  color: var(--accent-color);
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.toggle-notes-btn:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.task-notes-container {
+  margin-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 1rem;
+  display: none; /* Hidden by default */
+}
+
+.task-notes-container.visible {
+  display: block;
+}
+
+.task-notes-container textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: rgba(15, 23, 42, 0.5);
+  color: var(--text-color);
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.task-notes-container textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.task-notes-container .save-notes-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--secondary-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 1rem;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .calendar-container {
+    min-width: 0;
+  }
+
+  header {
+    padding: 1rem;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+}

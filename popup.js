@@ -1,0 +1,841 @@
+// Global state
+const state = {
+  tasks: {}, // Organized by date: { '2025-05-06': [task1, task2, ...] }
+  currentDate: new Date(),
+  displayDate: new Date(),
+  selectedDate: new Date(),
+  selectedTaskIndex: null,
+  selectedHistoryEntry: null,
+  trackingType: null,
+};
+
+// Format functions
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateDisplay(date) {
+  const options = { year: "numeric", month: "long", day: "numeric" };
+  return date.toLocaleDateString("en-US", options);
+}
+
+function formatTimeForInput(date) {
+  if (!date) return "";
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function formatTime(date) {
+  if (!date) return "";
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDuration(ms) {
+  if (!ms || ms < 0) return "0:00";
+  let seconds = Math.floor((ms / 1000) % 60);
+  let minutes = Math.floor((ms / (1000 * 60)) % 60);
+  let hours = Math.floor(ms / (1000 * 60 * 60));
+  const paddedMinutes = String(minutes).padStart(2, "0");
+  const paddedSeconds = String(seconds).padStart(2, "0");
+  if (hours > 0) {
+    return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+  } else {
+    return `${minutes}:${paddedSeconds}`;
+  }
+}
+
+// Storage functions
+function saveState() {
+  localStorage.setItem("taskTrackerData", JSON.stringify(state.tasks));
+}
+
+function loadState() {
+  const savedData = localStorage.getItem("taskTrackerData");
+  if (savedData) {
+    try {
+      state.tasks = JSON.parse(savedData);
+      for (const dateKey in state.tasks) {
+        state.tasks[dateKey].forEach((task) => {
+          if (task.timeEntries) {
+            task.timeEntries.forEach((entry) => {
+              entry.time = new Date(entry.time);
+            });
+            task.timeEntries.sort((a, b) => a.time - b.time);
+          }
+          // Migrate old manualTime to manualTimeAdded if needed
+          if (typeof task.manualTime === "number") {
+            task.manualTimeAdded =
+              (task.manualTimeAdded || 0) + task.manualTime;
+            delete task.manualTime;
+          }
+          // Ensure notes field exists
+          task.notes = task.notes || "";
+        });
+      }
+    } catch (e) {
+      console.error("Error loading state:", e);
+      state.tasks = {};
+    }
+  }
+}
+
+// Calendar functions
+function generateCalendar() {
+  const calendarBody = document.getElementById("calendar-body");
+  calendarBody.innerHTML = "";
+
+  const year = state.displayDate.getFullYear();
+  const month = state.displayDate.getMonth();
+
+  document.getElementById("calendar-title").textContent = new Date(
+    year,
+    month,
+    1
+  ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const firstDay = new Date(year, month, 1);
+  const startingDay = firstDay.getDay();
+  const lastDay = new Date(year, month + 1, 0);
+  const totalDays = lastDay.getDate();
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+  const cellsBefore = startingDay;
+  const totalCells = cellsBefore + totalDays;
+  const cellsAfter = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  const grandTotal = totalCells + cellsAfter;
+
+  let dayCount = 0;
+
+  for (let i = 0; i < grandTotal / 7; i++) {
+    const row = document.createElement("tr");
+    for (let j = 0; j < 7; j++) {
+      const cell = document.createElement("td");
+      let cellDate,
+        cellDay,
+        isOther = false;
+
+      if (dayCount < cellsBefore) {
+        cellDay = prevMonthLastDay - cellsBefore + dayCount + 1;
+        cellDate = new Date(year, month - 1, cellDay);
+        cell.classList.add("other-month");
+        isOther = true;
+      } else if (dayCount >= cellsBefore + totalDays) {
+        cellDay = dayCount - cellsBefore - totalDays + 1;
+        cellDate = new Date(year, month + 1, cellDay);
+        cell.classList.add("other-month");
+        isOther = true;
+      } else {
+        cellDay = dayCount - cellsBefore + 1;
+        cellDate = new Date(year, month, cellDay);
+      }
+
+      cell.textContent = cellDay;
+      cell.dataset.date = formatDate(cellDate);
+
+      if (
+        cellDate.toDateString() === state.currentDate.toDateString() &&
+        !isOther
+      ) {
+        cell.classList.add("today");
+      }
+      if (cellDate.toDateString() === state.selectedDate.toDateString()) {
+        cell.classList.add("selected");
+      }
+
+      const dateKey = formatDate(cellDate);
+      if (state.tasks[dateKey]?.length) {
+        const indicator = document.createElement("div");
+        indicator.className = "task-indicator";
+        const count = Math.min(state.tasks[dateKey].length, 3);
+        for (let k = 0; k < count; k++) {
+          const dot = document.createElement("div");
+          dot.className = "task-dot";
+          indicator.appendChild(dot);
+        }
+        cell.appendChild(indicator);
+      }
+
+      cell.addEventListener("click", () => {
+        const clicked = cell.dataset.date;
+        const newDate = new Date(clicked);
+        const prev = document.querySelector(".calendar td.selected");
+        if (prev) prev.classList.remove("selected");
+        cell.classList.add("selected");
+        state.selectedDate = newDate;
+
+        if (
+          newDate.getMonth() !== state.displayDate.getMonth() ||
+          newDate.getFullYear() !== state.displayDate.getFullYear()
+        ) {
+          state.displayDate = new Date(
+            newDate.getFullYear(),
+            newDate.getMonth(),
+            1
+          );
+          generateCalendar();
+          document
+            .querySelector(`.calendar td[data-date="${clicked}"]`)
+            ?.classList.add("selected");
+        }
+        updateTasksView();
+      });
+
+      row.appendChild(cell);
+      dayCount++;
+    }
+    calendarBody.appendChild(row);
+  }
+}
+
+function updateTasksView() {
+  const dateKey = formatDate(state.selectedDate);
+  const list = document.getElementById("task-list");
+  const dateDisplay = document.getElementById("tasks-date");
+  dateDisplay.textContent = formatDateDisplay(state.selectedDate);
+
+  // Clear intervals
+  list.querySelectorAll(".task-item").forEach((el) => {
+    if (el.dataset.intervalId) {
+      clearInterval(parseInt(el.dataset.intervalId));
+    }
+  });
+
+  list.innerHTML = "";
+  const tasks = state.tasks[dateKey] || [];
+  if (!tasks.length) {
+    const msg = document.createElement("div");
+    msg.textContent = "No tasks for this day. Add a task to get started.";
+    msg.style.textAlign = "center";
+    msg.style.padding = "2rem";
+    msg.style.color = "var(--text-muted)";
+    list.appendChild(msg);
+    return;
+  }
+
+  tasks.forEach((task, idx) => {
+    list.appendChild(renderTask(task, idx));
+  });
+}
+
+function renderTask(task, index) {
+  const taskItem = document.createElement("div");
+  taskItem.className = "task-item";
+  taskItem.dataset.taskIndex = index;
+
+  // Calculate totalTime & running status
+  let tracked = 0;
+  let running = false,
+    lastStart = null;
+  if (task.timeEntries?.length) {
+    task.timeEntries.sort((a, b) => a.time - b.time);
+    task.timeEntries.forEach((entry) => {
+      if (entry.type === "start") {
+        lastStart = entry.time;
+      } else if (entry.type === "stop" && lastStart) {
+        tracked += entry.time.getTime() - lastStart.getTime();
+        lastStart = null;
+      }
+    });
+    const last = task.timeEntries[task.timeEntries.length - 1];
+    if (last && last.type === "start") {
+      // Added null check for last
+      running = true;
+      lastStart = last.time;
+      tracked += new Date().getTime() - lastStart.getTime();
+    }
+  }
+  // Manual time
+  const manualAdded = task.manualTimeAdded || 0;
+  const manualRemoved = task.manualTimeRemoved || 0;
+  let total = Math.max(0, tracked + manualAdded - manualRemoved);
+
+  const header = document.createElement("div");
+  header.className = "task-header";
+  const title = document.createElement("div");
+  title.className = "task-title";
+  title.textContent = task.title;
+  const timeEl = document.createElement("div");
+  timeEl.className = "task-time";
+  timeEl.textContent = formatDuration(total);
+  header.appendChild(title);
+  header.appendChild(timeEl);
+
+  if (running) {
+    const intervalId = setInterval(() => {
+      const dateKey = formatDate(state.selectedDate);
+      const curr = state.tasks[dateKey]?.[index];
+      if (
+        !curr ||
+        !curr.timeEntries?.length ||
+        curr.timeEntries[curr.timeEntries.length - 1].type !== "start"
+      ) {
+        clearInterval(intervalId);
+        delete taskItem.dataset.intervalId;
+        updateTasksView();
+        return;
+      }
+      // recalc
+      let tempTotal = curr.manualTimeAdded - curr.manualTimeRemoved || 0; // Adjusted to use added/removed
+      let tempStart = null;
+      curr.timeEntries.forEach((e) => {
+        if (e.type === "start") tempStart = e.time;
+        else if (e.type === "stop" && tempStart) {
+          tempTotal += e.time.getTime() - tempStart.getTime();
+          tempStart = null;
+        }
+      });
+      if (tempStart) {
+        // Only add running time if there is an un-stopped start entry
+        tempTotal += new Date().getTime() - tempStart.getTime();
+      }
+
+      timeEl.textContent = formatDuration(tempTotal);
+    }, 1000);
+    taskItem.dataset.intervalId = intervalId;
+  }
+
+  // Actions
+  const actions = document.createElement("div");
+  actions.className = "task-actions";
+
+  const startStopBtn = document.createElement("button");
+  startStopBtn.classList.add(running ? "secondary" : "success"); // Use success for start, secondary for stop
+  startStopBtn.innerHTML = running
+    ? '<i class="fas fa-stop"></i> Stop Tracking'
+    : '<i class="fas fa-play"></i> Start Tracking';
+  startStopBtn.addEventListener("click", () => {
+    openTrackingModal(index, running ? "stop" : "start");
+  });
+
+  const addTimeBtn = document.createElement("button");
+  addTimeBtn.classList.add("secondary");
+  addTimeBtn.innerHTML = '<i class="fas fa-plus-square"></i> Add Manual Time';
+  addTimeBtn.addEventListener("click", () => {
+    state.selectedTaskIndex = index;
+    openAddHoursModal();
+  });
+
+  const removeTimeBtn = document.createElement("button");
+  removeTimeBtn.classList.add("secondary", "danger"); // Use danger for remove
+  removeTimeBtn.innerHTML =
+    '<i class="fas fa-minus-square"></i> Remove Manual Time';
+  removeTimeBtn.addEventListener("click", () => {
+    state.selectedTaskIndex = index;
+    openRemoveHoursModal();
+  });
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.classList.add("danger"); // Use danger for delete
+  deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+  deleteBtn.addEventListener("click", () => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    const dateKey = formatDate(state.selectedDate);
+    state.tasks[dateKey].splice(index, 1);
+    if (!state.tasks[dateKey].length) delete state.tasks[dateKey];
+    saveState();
+    updateTasksView();
+    generateCalendar(); // Regenerate calendar to update dot
+  });
+
+  actions.appendChild(startStopBtn);
+  actions.appendChild(addTimeBtn);
+  actions.appendChild(removeTimeBtn);
+  actions.appendChild(deleteBtn);
+
+  taskItem.appendChild(header);
+  taskItem.appendChild(actions);
+
+  const toggleHistory = document.createElement("div");
+  toggleHistory.className = "toggle-history";
+  toggleHistory.innerHTML = '<i class="fas fa-history"></i> View Time History';
+  if (
+    task.timeEntries?.length ||
+    task.manualTimeAdded > 0 ||
+    task.manualTimeRemoved > 0
+  ) {
+    // Check both manual added/removed
+    toggleHistory.addEventListener("click", (e) => {
+      const existing = taskItem.querySelector(".task-history");
+      if (existing) {
+        existing.remove();
+        e.target.innerHTML = '<i class="fas fa-history"></i> View Time History';
+      } else {
+        taskItem.appendChild(renderTimeHistory(task, index));
+        e.target.innerHTML = '<i class="fas fa-history"></i> Hide Time History';
+      }
+    });
+    taskItem.appendChild(toggleHistory);
+  }
+
+  // Notes Section
+  const toggleNotesBtn = document.createElement("button");
+  toggleNotesBtn.className = "toggle-notes-btn";
+  toggleNotesBtn.innerHTML = '<i class="fas fa-sticky-note"></i> Toggle Notes';
+
+  const notesContainer = document.createElement("div");
+  notesContainer.className = "task-notes-container";
+
+  const notesTextarea = document.createElement("textarea");
+  notesTextarea.className = "task-notes-input";
+  notesTextarea.placeholder = "Add notes here...";
+  notesTextarea.value = task.notes || "";
+
+  const saveNotesBtn = document.createElement("button");
+  saveNotesBtn.className = "save-notes-btn secondary";
+  saveNotesBtn.innerHTML = '<i class="fas fa-save"></i> Save Notes';
+
+  notesContainer.appendChild(notesTextarea);
+  notesContainer.appendChild(saveNotesBtn);
+
+  toggleNotesBtn.addEventListener("click", () => {
+    notesContainer.classList.toggle("visible");
+    toggleNotesBtn.innerHTML = notesContainer.classList.contains("visible")
+      ? '<i class="fas fa-sticky-note"></i> Hide Notes'
+      : '<i class="fas fa-sticky-note"></i> Show Notes';
+  });
+
+  saveNotesBtn.addEventListener("click", () => {
+    const dateKey = formatDate(state.selectedDate);
+    const currentTask = state.tasks[dateKey]?.[index];
+    if (currentTask) {
+      currentTask.notes = notesTextarea.value;
+      saveState();
+      // Optionally provide feedback
+      saveNotesBtn.textContent = "Notes Saved!";
+      saveNotesBtn.classList.remove("secondary");
+      saveNotesBtn.classList.add("success");
+      setTimeout(() => {
+        saveNotesBtn.innerHTML = '<i class="fas fa-save"></i> Save Notes';
+        saveNotesBtn.classList.remove("success");
+        saveNotesBtn.classList.add("secondary");
+      }, 1500);
+    }
+  });
+
+  taskItem.appendChild(toggleNotesBtn);
+  taskItem.appendChild(notesContainer);
+
+  return taskItem;
+}
+
+function renderTimeHistory(task, taskIndex) {
+  const section = document.createElement("div");
+  section.className = "task-history";
+  const manualAdded = task.manualTimeAdded || 0;
+  const manualRemoved = task.manualTimeRemoved || 0;
+
+  if (manualAdded > 0 || manualRemoved > 0) {
+    // Render manual section if either is present
+    const manualHeader = document.createElement("div");
+    manualHeader.textContent = "Manual Adjustments:";
+    manualHeader.style.fontWeight = "600";
+    manualHeader.style.marginBottom = "0.5rem";
+    section.appendChild(manualHeader);
+
+    if (manualAdded > 0) {
+      const manualEntry = document.createElement("div");
+      manualEntry.className = "history-entry";
+      const info = document.createElement("div");
+      info.innerHTML = `➕ Added: ${formatDuration(
+        manualAdded
+      )} <span style="font-size:0.7em; color: var(--text-muted); margin-left: 0.5em;">(Resetting will clear this total)</span>`;
+      const resetBtn = document.createElement("button");
+      resetBtn.innerHTML = '<i class="fas fa-redo"></i> Reset';
+      resetBtn.classList.add("secondary", "icon-only"); // Use icon-only
+      resetBtn.addEventListener("click", () => {
+        const dateKey = formatDate(state.selectedDate);
+        state.tasks[dateKey][taskIndex].manualTimeAdded = 0;
+        saveState();
+        updateTasksView();
+      });
+      manualEntry.appendChild(info);
+      manualEntry.appendChild(resetBtn);
+      section.appendChild(manualEntry);
+    }
+    if (manualRemoved > 0) {
+      const manualEntry = document.createElement("div");
+      manualEntry.className = "history-entry";
+      const info = document.createElement("div");
+      info.innerHTML = `➖ Removed: ${formatDuration(
+        manualRemoved
+      )} <span style="font-size:0.7em; color: var(--text-muted); margin-left: 0.5em;">(Resetting will clear this total)</span>`;
+
+      const resetBtn = document.createElement("button");
+      resetBtn.innerHTML = '<i class="fas fa-redo"></i> Reset';
+      resetBtn.classList.add("secondary", "icon-only"); // Use icon-only
+      resetBtn.addEventListener("click", () => {
+        const dateKey = formatDate(state.selectedDate);
+        state.tasks[dateKey][taskIndex].manualTimeRemoved = 0;
+        saveState();
+        updateTasksView();
+      });
+      manualEntry.appendChild(info);
+      manualEntry.appendChild(resetBtn);
+      section.appendChild(manualEntry);
+    }
+
+    const manualHr = document.createElement("hr");
+    manualHr.style.margin = "1rem 0";
+    manualHr.style.borderTop = "1px dashed var(--border-color)";
+    section.appendChild(manualHr);
+  }
+
+  if (!task.timeEntries?.length) {
+    if (manualAdded === 0 && manualRemoved === 0) {
+      // Only show message if no entries at all
+      const msg = document.createElement("div");
+      msg.textContent = "No tracking entries yet.";
+      section.appendChild(msg);
+    }
+    return section;
+  }
+
+  const trackingHeader = document.createElement("div");
+  trackingHeader.textContent = "Tracking Entries:";
+  trackingHeader.style.fontWeight = "600";
+  trackingHeader.style.marginBottom = "0.5rem";
+  section.appendChild(trackingHeader);
+
+  task.timeEntries.forEach((entry, i) => {
+    const entryDiv = document.createElement("div");
+    entryDiv.className = "history-entry";
+    const entryInfo = document.createElement("div");
+    entryInfo.innerHTML = `${
+      entry.type === "start"
+        ? '<i class="fas fa-play" style="color: var(--success-color); margin-right: 0.5em;"></i> Started'
+        : '<i class="fas fa-stop" style="color: var(--secondary-color); margin-right: 0.5em;"></i> Stopped'
+    } at ${formatTime(entry.time)}`;
+    const actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.gap = "0.5rem";
+
+    const editBtn = document.createElement("button");
+    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    editBtn.classList.add("secondary", "icon-only");
+    editBtn.addEventListener("click", () => {
+      openEditModal(taskIndex, i);
+    });
+
+    const deleteEntryBtn = document.createElement("button");
+    deleteEntryBtn.innerHTML = '<i class="fas fa-trash"></i>';
+    deleteEntryBtn.classList.add("danger", "icon-only");
+    deleteEntryBtn.addEventListener("click", () => {
+      if (confirm("Are you sure you want to delete this time entry?")) {
+        const dateKey = formatDate(state.selectedDate);
+        state.tasks[dateKey][taskIndex].timeEntries.splice(i, 1);
+        if (!state.tasks[dateKey][taskIndex].timeEntries.length) {
+          delete state.tasks[dateKey][taskIndex].timeEntries;
+        }
+        saveState();
+        updateTasksView();
+      }
+    });
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteEntryBtn);
+    entryDiv.appendChild(entryInfo);
+    entryDiv.appendChild(actions);
+    section.appendChild(entryDiv);
+  });
+
+  return section;
+}
+
+function openEditModal(taskIndex, entryIndex) {
+  const modal = document.getElementById("edit-modal");
+  const timeInput = document.getElementById("edit-time");
+  const typeSelect = document.getElementById("edit-type");
+  const dateKey = formatDate(state.selectedDate);
+  const entry = state.tasks[dateKey]?.[taskIndex]?.timeEntries?.[entryIndex];
+  if (!entry) return;
+  timeInput.value = formatTimeForInput(entry.time);
+  typeSelect.value = entry.type;
+  state.selectedTaskIndex = taskIndex;
+  state.selectedHistoryEntry = entryIndex;
+  modal.style.display = "flex";
+}
+
+function closeEditModal() {
+  document.getElementById("edit-modal").style.display = "none";
+  state.selectedTaskIndex = null;
+  state.selectedHistoryEntry = null;
+}
+
+function saveEdit() {
+  const dateKey = formatDate(state.selectedDate);
+  const timeInput = document.getElementById("edit-time");
+  const typeSelect = document.getElementById("edit-type");
+  const idx = state.selectedTaskIndex;
+  const entryIdx = state.selectedHistoryEntry;
+  if (idx === null || entryIdx === null || !timeInput.value) {
+    alert("Please select a valid time.");
+    return;
+  }
+  const parts = timeInput.value.split(":");
+  const newDate = new Date(state.selectedDate);
+  newDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+  if (isNaN(newDate.getTime())) {
+    alert("Invalid time selected.");
+    return;
+  }
+  const task = state.tasks[dateKey][idx];
+  const entry = task.timeEntries[entryIdx];
+  entry.type = typeSelect.value;
+  entry.time = newDate;
+  task.timeEntries.sort((a, b) => a.time - b.time);
+  saveState();
+  updateTasksView();
+  closeEditModal();
+}
+
+function openAddHoursModal() {
+  document.getElementById("add-hours-input").value = 0;
+  document.getElementById("add-minutes-input").value = 0;
+  document.getElementById("add-hours-modal").style.display = "flex";
+}
+
+function closeAddHoursModal() {
+  document.getElementById("add-hours-modal").style.display = "none";
+  state.selectedTaskIndex = null;
+}
+
+function saveAddHours() {
+  const dateKey = formatDate(state.selectedDate);
+  const hours = parseInt(document.getElementById("add-hours-input").value) || 0;
+  const minutes =
+    parseInt(document.getElementById("add-minutes-input").value) || 0;
+  const idx = state.selectedTaskIndex;
+  if (idx !== null) {
+    const task = state.tasks[dateKey][idx];
+    const ms = hours * 3600000 + minutes * 60000;
+    if (ms > 0) {
+      task.manualTimeAdded = (task.manualTimeAdded || 0) + ms;
+      saveState();
+      updateTasksView();
+    }
+  }
+  closeAddHoursModal();
+}
+
+function openRemoveHoursModal() {
+  document.getElementById("remove-hours-input").value = 0;
+  document.getElementById("remove-minutes-input").value = 0;
+  document.getElementById("remove-hours-modal").style.display = "flex";
+}
+
+function closeRemoveHoursModal() {
+  document.getElementById("remove-hours-modal").style.display = "none";
+  state.selectedTaskIndex = null;
+}
+
+function saveRemoveHours() {
+  const dateKey = formatDate(state.selectedDate);
+  const hours =
+    parseInt(document.getElementById("remove-hours-input").value) || 0;
+  const minutes =
+    parseInt(document.getElementById("remove-minutes-input").value) || 0;
+  const idx = state.selectedTaskIndex;
+  if (idx !== null) {
+    const task = state.tasks[dateKey][idx];
+    const ms = hours * 3600000 + minutes * 60000;
+    if (ms > 0) {
+      task.manualTimeRemoved = (task.manualTimeRemoved || 0) + ms;
+      saveState();
+      updateTasksView();
+    }
+  }
+  closeRemoveHoursModal();
+}
+
+function openTrackingModal(taskIndex, type) {
+  state.selectedTaskIndex = taskIndex;
+  state.trackingType = type;
+  const modal = document.getElementById("tracking-modal");
+  document.getElementById("tracking-modal-title").textContent =
+    type === "start" ? "Confirm Start Time" : "Confirm Stop Time";
+  document.getElementById("tracking-time").value = formatTimeForInput(
+    new Date()
+  );
+  modal.style.display = "flex";
+}
+
+function closeTrackingModal() {
+  document.getElementById("tracking-modal").style.display = "none";
+  state.selectedTaskIndex = null;
+  state.trackingType = null;
+}
+
+function confirmTrackingTime() {
+  const dateKey = formatDate(state.selectedDate);
+  const idx = state.selectedTaskIndex;
+  const type = state.trackingType;
+  const timeVal = document.getElementById("tracking-time").value;
+  if (idx === null || !type || !timeVal) {
+    alert("Something went wrong. Please try again.");
+    closeTrackingModal();
+    return;
+  }
+  const parts = timeVal.split(":");
+  const dt = new Date(state.selectedDate);
+  dt.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+  if (isNaN(dt.getTime())) {
+    alert("Invalid time entered.");
+    return;
+  }
+  const task = state.tasks[dateKey]?.[idx];
+  if (!task) {
+    alert("Task not found.");
+    closeTrackingModal();
+    return;
+  }
+
+  // Prevent adding 'start' if already running
+  if (type === "start" && task.timeEntries?.length) {
+    const lastEntry = task.timeEntries[task.timeEntries.length - 1];
+    if (lastEntry.type === "start") {
+      alert("Task is already running.");
+      closeTrackingModal();
+      return;
+    }
+  }
+  // Prevent adding 'stop' if not running
+  if (type === "stop" && task.timeEntries?.length) {
+    const lastEntry = task.timeEntries[task.timeEntries.length - 1];
+    if (
+      lastEntry.type === "stop" ||
+      task.timeEntries.filter((e) => e.type === "start").length <=
+        task.timeEntries.filter((e) => e.type === "stop").length
+    ) {
+      alert("Task is not currently running.");
+      closeTrackingModal();
+      return;
+    }
+  }
+
+  task.timeEntries = task.timeEntries || [];
+  task.timeEntries.push({ type, time: dt });
+  task.timeEntries.sort((a, b) => a.time - b.time);
+  saveState();
+  updateTasksView();
+  closeTrackingModal();
+}
+
+// Event listeners
+function addEventListeners() {
+  document.getElementById("prev-month").addEventListener("click", () => {
+    state.displayDate = new Date(
+      state.displayDate.getFullYear(),
+      state.displayDate.getMonth() - 1,
+      1
+    );
+    generateCalendar();
+  });
+  document.getElementById("next-month").addEventListener("click", () => {
+    state.displayDate = new Date(
+      state.displayDate.getFullYear(),
+      state.displayDate.getMonth() + 1,
+      1
+    );
+    generateCalendar();
+  });
+  document.getElementById("current-month").addEventListener("click", () => {
+    state.displayDate = new Date();
+    state.selectedDate = new Date();
+    generateCalendar();
+    updateTasksView();
+  });
+
+  document.getElementById("add-task-btn").addEventListener("click", addTask);
+  document
+    .getElementById("new-task-input")
+    .addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addTask();
+      }
+    });
+
+  document
+    .getElementById("close-edit-modal")
+    .addEventListener("click", closeEditModal);
+  document
+    .getElementById("cancel-edit")
+    .addEventListener("click", closeEditModal);
+  document.getElementById("save-edit").addEventListener("click", saveEdit);
+
+  document
+    .getElementById("close-add-hours-modal")
+    .addEventListener("click", closeAddHoursModal);
+  document
+    .getElementById("cancel-add-hours")
+    .addEventListener("click", closeAddHoursModal);
+  document
+    .getElementById("save-add-hours")
+    .addEventListener("click", saveAddHours);
+
+  document
+    .getElementById("close-remove-hours-modal")
+    .addEventListener("click", closeRemoveHoursModal);
+  document
+    .getElementById("cancel-remove-hours")
+    .addEventListener("click", closeRemoveHoursModal);
+  document
+    .getElementById("save-remove-hours")
+    .addEventListener("click", saveRemoveHours);
+
+  document
+    .getElementById("close-tracking-modal")
+    .addEventListener("click", closeTrackingModal);
+  document
+    .getElementById("cancel-tracking")
+    .addEventListener("click", closeTrackingModal);
+  document
+    .getElementById("confirm-tracking")
+    .addEventListener("click", confirmTrackingTime);
+
+  window.addEventListener("click", (e) => {
+    const edit = document.getElementById("edit-modal");
+    const addH = document.getElementById("add-hours-modal");
+    const removeH = document.getElementById("remove-hours-modal");
+    const track = document.getElementById("tracking-modal");
+    if (e.target === edit) closeEditModal();
+    if (e.target === addH) closeAddHoursModal();
+    if (e.target === removeH) closeRemoveHoursModal();
+    if (e.target === track) closeTrackingModal();
+  });
+}
+
+function addTask() {
+  const input = document.getElementById("new-task-input");
+  const title = input.value.trim();
+  if (!title) return;
+  const dateKey = formatDate(state.selectedDate);
+  state.tasks[dateKey] = state.tasks[dateKey] || [];
+  state.tasks[dateKey].push({
+    title,
+    timeEntries: [],
+    manualTimeAdded: 0,
+    manualTimeRemoved: 0,
+    notes: "", // Add notes field
+  });
+  input.value = "";
+  saveState();
+  updateTasksView();
+  generateCalendar();
+}
+
+function initApp() {
+  loadState();
+  generateCalendar();
+  updateTasksView();
+  addEventListeners();
+}
+
+document.addEventListener("DOMContentLoaded", initApp);
