@@ -245,7 +245,6 @@ function renderTask(task, index) {
     });
     const last = task.timeEntries[task.timeEntries.length - 1];
     if (last && last.type === "start") {
-      // Added null check for last
       running = true;
       lastStart = last.time;
       tracked += new Date().getTime() - lastStart.getTime();
@@ -258,48 +257,79 @@ function renderTask(task, index) {
 
   const header = document.createElement("div");
   header.className = "task-header";
+  
+  // Task title with edit icon
+  const titleContainer = document.createElement("div");
+  titleContainer.style.display = "flex";
+  titleContainer.style.alignItems = "center";
+  titleContainer.style.gap = "8px";
+  
   const title = document.createElement("div");
   title.className = "task-title";
   title.textContent = task.title;
+  
+  const editIcon = document.createElement("i");
+  editIcon.className = "fas fa-edit";
+  editIcon.style.cursor = "pointer";
+  editIcon.style.fontSize = "0.8rem";
+  editIcon.style.color = "var(--text-secondary)";
+  editIcon.title = "Edit task name";
+  editIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    editTaskTitle(index, task.title);
+  });
+  
+  const copyIcon = document.createElement("i");
+  copyIcon.className = "fas fa-copy";
+  copyIcon.style.cursor = "pointer";
+  copyIcon.style.fontSize = "0.8rem";
+  copyIcon.style.color = "var(--text-secondary)";
+  copyIcon.title = "Copy task details";
+  copyIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    
+    // Format the time string
+    const hours = Math.floor(total / 3600000);
+    const minutes = Math.floor((total % 3600000) / 60000);
+    
+    const timeString = 
+      (hours ? `${hours} hour${hours > 1 ? 's' : ''}` : '') +
+      (hours && minutes ? ', ' : '') +
+      (minutes ? `${minutes} minute${minutes > 1 ? 's' : ''}` : '0 minutes');
+    
+    const textToCopy = `${task.title}: ${timeString}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      // Show a brief notification
+      const notification = document.createElement('div');
+      notification.textContent = 'Copied to clipboard!';
+      notification.style.position = 'fixed';
+      notification.style.bottom = '20px';
+      notification.style.right = '20px';
+      notification.style.backgroundColor = 'var(--card-background)';
+      notification.style.color = 'var(--text-color)';
+      notification.style.padding = '10px 20px';
+      notification.style.borderRadius = '5px';
+      notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+      notification.style.zIndex = '1000';
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 2000);
+    });
+  });
+  
+  titleContainer.appendChild(title);
+  titleContainer.appendChild(editIcon);
+  titleContainer.appendChild(copyIcon);
+  
   const timeEl = document.createElement("div");
   timeEl.className = "task-time";
   timeEl.textContent = formatDuration(total);
-  header.appendChild(title);
+  
+  header.appendChild(titleContainer);
   header.appendChild(timeEl);
-
-  if (running) {
-    const intervalId = setInterval(() => {
-      const dateKey = formatDate(state.selectedDate);
-      const curr = state.tasks[dateKey]?.[index];
-      if (
-        !curr ||
-        !curr.timeEntries?.length ||
-        curr.timeEntries[curr.timeEntries.length - 1].type !== "start"
-      ) {
-        clearInterval(intervalId);
-        delete taskItem.dataset.intervalId;
-        updateTasksView();
-        return;
-      }
-      // recalc
-      let tempTotal = curr.manualTimeAdded - curr.manualTimeRemoved || 0; // Adjusted to use added/removed
-      let tempStart = null;
-      curr.timeEntries.forEach((e) => {
-        if (e.type === "start") tempStart = e.time;
-        else if (e.type === "stop" && tempStart) {
-          tempTotal += e.time.getTime() - tempStart.getTime();
-          tempStart = null;
-        }
-      });
-      if (tempStart) {
-        // Only add running time if there is an un-stopped start entry
-        tempTotal += new Date().getTime() - tempStart.getTime();
-      }
-
-      timeEl.textContent = formatDuration(tempTotal);
-    }, 1000);
-    taskItem.dataset.intervalId = intervalId;
-  }
 
   // Actions
   const actions = document.createElement("div");
@@ -546,6 +576,16 @@ function renderTimeHistory(task, taskIndex) {
   });
 
   return section;
+}
+
+function editTaskTitle(taskIndex, currentTitle) {
+  const newTitle = prompt("Edit task name:", currentTitle);
+  if (newTitle !== null && newTitle.trim() !== "" && newTitle !== currentTitle) {
+    const dateKey = formatDate(state.selectedDate);
+    state.tasks[dateKey][taskIndex].title = newTitle.trim();
+    saveState();
+    updateTasksView();
+  }
 }
 
 function openEditModal(taskIndex, entryIndex) {
