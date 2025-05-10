@@ -476,13 +476,13 @@ function renderTask(task, index) {
   historyBtn.classList.add("history-btn");
   historyBtn.title = "View Time History";
   historyBtn.innerHTML = '<i class="fas fa-history"></i>';
-  
+
   // Create notes button
   const notesBtn = document.createElement("button");
   notesBtn.classList.add("notes-btn");
   notesBtn.title = "Toggle Notes";
   notesBtn.innerHTML = '<i class="fas fa-sticky-note"></i>';
-  
+
   const removeTimeBtn = document.createElement("button");
   removeTimeBtn.classList.add("secondary"); // Changed to match add time button
   removeTimeBtn.title = "Remove Manual Time";
@@ -530,13 +530,13 @@ function renderTask(task, index) {
     historyBtn.style.opacity = "0.5";
     historyBtn.title = "No history available";
   }
-  
+
   // Configure notes button with toggle state
   notesBtn.addEventListener("click", () => {
     const notesContainer = taskItem.querySelector(".task-notes-container");
     if (notesContainer) {
       notesContainer.classList.toggle("visible");
-      
+
       if (notesContainer.classList.contains("visible")) {
         notesBtn.classList.add("active");
         // Scroll to notes section when it becomes visible
@@ -546,7 +546,7 @@ function renderTask(task, index) {
       }
     }
   });
-  
+
   // Add buttons in the requested order
   actions.appendChild(startStopBtn);
   actions.appendChild(addTimeBtn);
@@ -1326,16 +1326,16 @@ document.addEventListener("DOMContentLoaded", initApp);
 const startDateInput = document.getElementById("start-date");
 const startTimeInput = document.getElementById("start-time");
 
-let startDate = new Date(startDateInput.value);
-let endDate = new Date(document.getElementById("end-date").value);
+let startDate = new Date(startDateInput?.value);
+let endDate = new Date(document.getElementById("end-date")?.value);
 
-startDateInput.addEventListener("change", () => {
+startDateInput?.addEventListener("change", () => {
   const date = new Date(startDateInput.value);
   // Preserve existing time while updating date
   startDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
 });
 
-startTimeInput.addEventListener("change", () => {
+startTimeInput?.addEventListener("change", () => {
   const [hours, minutes] = startTimeInput.value.split(":").map(Number);
   startDate.setHours(hours);
   startDate.setMinutes(minutes);
