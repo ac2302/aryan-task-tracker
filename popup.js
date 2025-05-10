@@ -522,12 +522,35 @@ function renderTask(task, index) {
   notesTextarea.placeholder = "Add notes here...";
   notesTextarea.value = task.notes || "";
 
-  const saveNotesBtn = document.createElement("button");
-  saveNotesBtn.className = "save-notes-btn secondary";
-  saveNotesBtn.innerHTML = '<i class="fas fa-save"></i> Save Notes';
+  // Add debounce function
+  const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  };
 
-  notesContainer.appendChild(notesTextarea);
-  notesContainer.appendChild(saveNotesBtn);
+  // Add autosave indicator element
+  const saveIndicator = document.createElement('div');
+  saveIndicator.className = 'save-indicator';
+  saveIndicator.textContent = 'Auto-saved';
+  saveIndicator.style.display = 'none';
+
+  notesTextarea.addEventListener('input', debounce(() => {
+    task.notes = notesTextarea.value;
+    saveState();
+    
+    // Show save indicator
+    saveIndicator.style.display = 'block';
+    saveIndicator.style.opacity = '1';
+    setTimeout(() => {
+      saveIndicator.style.opacity = '0';
+      setTimeout(() => {
+        saveIndicator.style.display = 'none';
+      }, 300);
+    }, 1000);
+  }, 500));
 
   toggleNotesBtn.addEventListener("click", () => {
     notesContainer.classList.toggle("visible");
@@ -541,23 +564,8 @@ function renderTask(task, index) {
     }
   });
 
-  saveNotesBtn.addEventListener("click", () => {
-    const dateKey = formatDate(state.selectedDate);
-    const currentTask = state.tasks[dateKey]?.[index];
-    if (currentTask) {
-      currentTask.notes = notesTextarea.value;
-      saveState();
-      // Optionally provide feedback
-      saveNotesBtn.textContent = "Notes Saved!";
-      saveNotesBtn.classList.remove("secondary");
-      saveNotesBtn.classList.add("success");
-      setTimeout(() => {
-        saveNotesBtn.innerHTML = '<i class="fas fa-save"></i> Save Notes';
-        saveNotesBtn.classList.remove("success");
-        saveNotesBtn.classList.add("secondary");
-      }, 1500);
-    }
-  });
+  notesContainer.appendChild(notesTextarea);
+  notesContainer.appendChild(saveIndicator);
 
   taskItem.appendChild(toggleNotesBtn);
   taskItem.appendChild(notesContainer);
