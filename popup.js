@@ -63,7 +63,10 @@ function formatTimeHHMM(ms) {
 }
 
 // Helper function for scrolling to elements
-function scrollToElement(element, options = { behavior: "smooth", block: "start" }) {
+function scrollToElement(
+  element,
+  options = { behavior: "smooth", block: "start" }
+) {
   if (element) {
     element.scrollIntoView(options);
   }
@@ -532,32 +535,35 @@ function renderTask(task, index) {
   };
 
   // Add autosave indicator element
-  const saveIndicator = document.createElement('div');
-  saveIndicator.className = 'save-indicator';
-  saveIndicator.textContent = 'Auto-saved';
-  saveIndicator.style.display = 'none';
+  const saveIndicator = document.createElement("div");
+  saveIndicator.className = "save-indicator";
+  saveIndicator.textContent = "Auto-saved";
+  saveIndicator.style.display = "none";
 
-  notesTextarea.addEventListener('input', debounce(() => {
-    task.notes = notesTextarea.value;
-    saveState();
-    
-    // Show save indicator
-    saveIndicator.style.display = 'block';
-    saveIndicator.style.opacity = '1';
-    setTimeout(() => {
-      saveIndicator.style.opacity = '0';
+  notesTextarea.addEventListener(
+    "input",
+    debounce(() => {
+      task.notes = notesTextarea.value;
+      saveState();
+
+      // Show save indicator
+      saveIndicator.style.display = "block";
+      saveIndicator.style.opacity = "1";
       setTimeout(() => {
-        saveIndicator.style.display = 'none';
-      }, 300);
-    }, 1000);
-  }, 500));
+        saveIndicator.style.opacity = "0";
+        setTimeout(() => {
+          saveIndicator.style.display = "none";
+        }, 300);
+      }, 1000);
+    }, 500)
+  );
 
   toggleNotesBtn.addEventListener("click", () => {
     notesContainer.classList.toggle("visible");
     toggleNotesBtn.innerHTML = notesContainer.classList.contains("visible")
       ? '<i class="fas fa-sticky-note"></i> Hide Notes'
       : '<i class="fas fa-sticky-note"></i> Show Notes';
-    
+
     // Scroll to notes section when it becomes visible
     if (notesContainer.classList.contains("visible")) {
       setTimeout(() => scrollToElement(notesContainer), 50);
@@ -698,11 +704,7 @@ function renderTimeHistory(task, taskIndex) {
 
 function editTaskName(taskIndex, currentName) {
   const newName = prompt("Edit task name:", currentName);
-  if (
-    newName !== null &&
-    newName.trim() !== "" &&
-    newName !== currentName
-  ) {
+  if (newName !== null && newName.trim() !== "" && newName !== currentName) {
     const dateKey = formatDate(state.selectedDate);
     state.tasks[dateKey][taskIndex].name = newName.trim();
     saveState();
@@ -722,9 +724,12 @@ function openEditModal(taskIndex, entryIndex) {
   modal.style.display = "flex";
   document.getElementById("edit-time").value = formatTimeForInput(entry.time);
   document.getElementById("edit-type").value = entry.type;
-  
+
   // Scroll to the edit modal
-  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
+  setTimeout(
+    () => scrollToElement(modal, { behavior: "smooth", block: "center" }),
+    50
+  );
 }
 
 function closeEditModal() {
@@ -764,9 +769,12 @@ function openAddHoursModal() {
   const modal = document.getElementById("add-hours-modal");
   modal.style.display = "flex";
   document.getElementById("add-hours-input").value = "";
-  
+
   // Scroll to the add hours modal
-  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
+  setTimeout(
+    () => scrollToElement(modal, { behavior: "smooth", block: "center" }),
+    50
+  );
 }
 
 function closeAddHoursModal() {
@@ -796,9 +804,12 @@ function openRemoveHoursModal() {
   const modal = document.getElementById("remove-hours-modal");
   modal.style.display = "flex";
   document.getElementById("remove-hours-input").value = "";
-  
+
   // Scroll to the remove hours modal
-  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
+  setTimeout(
+    () => scrollToElement(modal, { behavior: "smooth", block: "center" }),
+    50
+  );
 }
 
 function closeRemoveHoursModal() {
@@ -831,13 +842,18 @@ function openTrackingModal(taskIndex, type) {
 
   const modal = document.getElementById("tracking-modal");
   modal.style.display = "flex";
-  document.getElementById("tracking-time").value = formatTimeForInput(new Date());
+  document.getElementById("tracking-time").value = formatTimeForInput(
+    new Date()
+  );
 
   document.getElementById("tracking-title").textContent =
     type === "start" ? "Start Tracking" : "Stop Tracking";
-    
+
   // Scroll to the tracking modal
-  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
+  setTimeout(
+    () => scrollToElement(modal, { behavior: "smooth", block: "center" }),
+    50
+  );
 }
 
 function closeTrackingModal() {
@@ -880,7 +896,8 @@ function confirmTrackingTime() {
   if (type === "start") {
     // Prevent adding 'start' if THIS specific task is already running
     if (taskToModify.timeEntries.length > 0) {
-      const lastEntryThisTask = taskToModify.timeEntries[taskToModify.timeEntries.length - 1];
+      const lastEntryThisTask =
+        taskToModify.timeEntries[taskToModify.timeEntries.length - 1];
       if (lastEntryThisTask.type === "start") {
         alert("This task is already running.");
         closeTrackingModal();
@@ -891,7 +908,8 @@ function confirmTrackingTime() {
     // Check for OTHER running tasks
     const allCurrentlyRunning = getCurrentlyRunningTasks();
     const otherRunningTasks = allCurrentlyRunning.filter(
-      runningInfo => !(runningInfo.dateKey === dateKey && runningInfo.taskIndex === idx)
+      (runningInfo) =>
+        !(runningInfo.dateKey === dateKey && runningInfo.taskIndex === idx)
     );
 
     if (otherRunningTasks.length > 0) {
@@ -901,14 +919,20 @@ function confirmTrackingTime() {
 
       if (stopPrevious) {
         const stopTimeForOthers = new Date(); // Stop previous tasks NOW
-        otherRunningTasks.forEach(runningInfo => {
+        otherRunningTasks.forEach((runningInfo) => {
           const taskToStop = runningInfo.taskRef; // Direct reference to the task object
           // Double-check it's indeed running before adding a stop entry
           if (taskToStop.timeEntries && taskToStop.timeEntries.length > 0) {
-            const lastEntryOther = taskToStop.timeEntries[taskToStop.timeEntries.length - 1];
-            if (lastEntryOther.type === 'start') {
-              taskToStop.timeEntries.push({ type: "stop", time: new Date(stopTimeForOthers.getTime()) }); // Use a copy of stopTimeForOthers
-              taskToStop.timeEntries.sort((a, b) => new Date(a.time) - new Date(b.time));
+            const lastEntryOther =
+              taskToStop.timeEntries[taskToStop.timeEntries.length - 1];
+            if (lastEntryOther.type === "start") {
+              taskToStop.timeEntries.push({
+                type: "stop",
+                time: new Date(stopTimeForOthers.getTime()),
+              }); // Use a copy of stopTimeForOthers
+              taskToStop.timeEntries.sort(
+                (a, b) => new Date(a.time) - new Date(b.time)
+              );
             }
           }
         });
@@ -916,32 +940,45 @@ function confirmTrackingTime() {
       // If !stopPrevious (user clicks Cancel), the new task will start, and others continue tracking.
     }
     // Now, add the 'start' entry for the taskToModify
-    taskToModify.timeEntries.push({ type: "start", time: new Date(dt.getTime()) });
-
+    taskToModify.timeEntries.push({
+      type: "start",
+      time: new Date(dt.getTime()),
+    });
   } else if (type === "stop") {
     // Prevent adding 'stop' if THIS task is not running or already stopped
     if (taskToModify.timeEntries.length > 0) {
-      const lastEntry = taskToModify.timeEntries[taskToModify.timeEntries.length - 1];
-      if (lastEntry.type === "stop") { // Already stopped
+      const lastEntry =
+        taskToModify.timeEntries[taskToModify.timeEntries.length - 1];
+      if (lastEntry.type === "stop") {
+        // Already stopped
         alert("Task is not currently running (already stopped).");
         closeTrackingModal();
         return;
       }
       // Check if there's a corresponding start for this stop action
-      const startCount = taskToModify.timeEntries.filter(e => e.type === "start").length;
-      const stopCount = taskToModify.timeEntries.filter(e => e.type === "stop").length;
-      if (startCount <= stopCount) { // No pending start to stop, or more stops than starts
-         alert("Task is not currently running (no active start entry).");
-         closeTrackingModal();
-         return;
+      const startCount = taskToModify.timeEntries.filter(
+        (e) => e.type === "start"
+      ).length;
+      const stopCount = taskToModify.timeEntries.filter(
+        (e) => e.type === "stop"
+      ).length;
+      if (startCount <= stopCount) {
+        // No pending start to stop, or more stops than starts
+        alert("Task is not currently running (no active start entry).");
+        closeTrackingModal();
+        return;
       }
-    } else { // No entries at all, so definitely not running
+    } else {
+      // No entries at all, so definitely not running
       alert("Task is not currently running (no entries).");
       closeTrackingModal();
       return;
     }
     // Add the 'stop' entry for the taskToModify
-    taskToModify.timeEntries.push({ type: "stop", time: new Date(dt.getTime()) });
+    taskToModify.timeEntries.push({
+      type: "stop",
+      time: new Date(dt.getTime()),
+    });
   }
 
   taskToModify.timeEntries.sort((a, b) => new Date(a.time) - new Date(b.time));
@@ -1008,14 +1045,21 @@ async function copyTaskDurations() {
     return;
   }
 
-  const dayOfWeek = state.selectedDate.toLocaleDateString("en-US", { weekday: 'long' });
+  const dayOfWeek = state.selectedDate.toLocaleDateString("en-US", {
+    weekday: "long",
+  });
   const day = state.selectedDate.getDate();
-  const month = state.selectedDate.toLocaleDateString("en-US", { month: 'long' });
+  const month = state.selectedDate.toLocaleDateString("en-US", {
+    month: "long",
+  });
   const year = state.selectedDate.getFullYear();
 
-  let report = `${dayOfWeek} ${String(day).padStart(2, '0')} ${month} ${year}:\n`;
+  let report = `${dayOfWeek} ${String(day).padStart(
+    2,
+    "0"
+  )} ${month} ${year}:\n`;
 
-  tasksForDay.forEach(task => {
+  tasksForDay.forEach((task) => {
     const durationMs = calculateTaskDuration(task);
     const durationFormatted = formatTimeHHMM(durationMs);
     report += `- ${task.name} (${durationFormatted})\n`;
@@ -1023,29 +1067,31 @@ async function copyTaskDurations() {
 
   try {
     await navigator.clipboard.writeText(report);
-    
+
     // Create notification container if it doesn't exist
-    let notificationContainer = document.getElementById('notification-container');
+    let notificationContainer = document.getElementById(
+      "notification-container"
+    );
     if (!notificationContainer) {
-      notificationContainer = document.createElement('div');
-      notificationContainer.id = 'notification-container';
-      notificationContainer.style.position = 'fixed';
-      notificationContainer.style.bottom = '20px';
-      notificationContainer.style.left = '0';
-      notificationContainer.style.width = '100%';
-      notificationContainer.style.display = 'flex';
-      notificationContainer.style.justifyContent = 'center';
-      notificationContainer.style.zIndex = '1000';
-      notificationContainer.style.pointerEvents = 'none';
+      notificationContainer = document.createElement("div");
+      notificationContainer.id = "notification-container";
+      notificationContainer.style.position = "fixed";
+      notificationContainer.style.bottom = "20px";
+      notificationContainer.style.left = "0";
+      notificationContainer.style.width = "100%";
+      notificationContainer.style.display = "flex";
+      notificationContainer.style.justifyContent = "center";
+      notificationContainer.style.zIndex = "1000";
+      notificationContainer.style.pointerEvents = "none";
       document.body.appendChild(notificationContainer);
     }
-    
+
     // Create and show toast notification
-    const notification = document.createElement('div');
-    notification.className = 'copy-notification';
-    notification.textContent = 'Task durations copied to clipboard!';
+    const notification = document.createElement("div");
+    notification.className = "copy-notification";
+    notification.textContent = "Task durations copied to clipboard!";
     notificationContainer.appendChild(notification);
-    
+
     // Remove notification after animation completes (3s)
     setTimeout(() => {
       notification.remove();
@@ -1054,16 +1100,15 @@ async function copyTaskDurations() {
         notificationContainer.remove();
       }
     }, 3000);
-    
   } catch (err) {
     console.error("Failed to copy task durations: ", err);
-    
+
     // Show error notification
-    const notification = document.createElement('div');
-    notification.className = 'copy-notification';
-    notification.textContent = 'Failed to copy durations';
+    const notification = document.createElement("div");
+    notification.className = "copy-notification";
+    notification.textContent = "Failed to copy durations";
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       notification.remove();
     }, 3000);
@@ -1165,11 +1210,11 @@ function addEventListeners() {
 
 function addTask() {
   const newTaskInput = document.getElementById("new-task-input");
-  
+
   // Add null check for newTaskInput
   if (!newTaskInput) {
     console.error("Error: Could not find element with ID 'new-task-input'.");
-    return; 
+    return;
   }
 
   const taskName = newTaskInput.value.trim();
@@ -1184,8 +1229,14 @@ function addTask() {
   }
 
   // Check for duplicate task names on the same day
-  if (state.tasks[dateKey].some(task => task.name.toLowerCase() === taskName.toLowerCase())) {
-    alert("A task with this name already exists for the selected day. Please use a different name.");
+  if (
+    state.tasks[dateKey].some(
+      (task) => task.name.toLowerCase() === taskName.toLowerCase()
+    )
+  ) {
+    alert(
+      "A task with this name already exists for the selected day. Please use a different name."
+    );
     return;
   }
 
@@ -1195,17 +1246,17 @@ function addTask() {
     manualTimeAdded: 0,
     manualTimeRemoved: 0,
     notes: "", // Initialize notes field
-    id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Unique ID
+    id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Unique ID
   });
 
   newTaskInput.value = "";
   saveState();
   updateTasksView();
   generateCalendar(); // Re-generate calendar to update daily totals if shown
-  
+
   // Scroll to the newly added task
   setTimeout(() => {
-    const taskItems = document.querySelectorAll('.task-item');
+    const taskItems = document.querySelectorAll(".task-item");
     if (taskItems.length > 0) {
       // Last task item is the one we just added
       const newTaskItem = taskItems[taskItems.length - 1];
