@@ -568,7 +568,7 @@ function renderTimeHistory(task, taskIndex) {
         manualAdded
       )} <span style="font-size:0.7em; color: var(--text-muted); margin-left: 0.5em;">(Resetting will clear this total)</span>`;
       const resetBtn = document.createElement("button");
-      resetBtn.innerHTML = '<i class="fas fa-redo"></i> Reset';
+      resetBtn.innerHTML = '<i class="fas fa-redo"></i>';
       resetBtn.classList.add("secondary", "icon-only"); // Use icon-only
       resetBtn.addEventListener("click", () => {
         const dateKey = formatDate(state.selectedDate);

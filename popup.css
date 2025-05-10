@@ -504,7 +504,7 @@ button.icon-only {
 }
 
 .toggle-history:before {
-  content: "📋";
+  /* content: "📋"; */
   font-size: 0.875rem;
 }
 
