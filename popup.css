@@ -65,7 +65,7 @@ header h1:before {
 .container {
   display: flex;
   max-width: 1400px;
-  margin: 2rem auto;
+  margin: 0.5rem auto;
   gap: 2rem;
   padding: 0 2rem;
 }
@@ -95,7 +95,7 @@ header h1:before {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding: 1rem;
   background-color: rgba(30, 41, 59, 0.5);
   border-bottom: 1px solid var(--border-color);
 }
@@ -660,6 +660,10 @@ button.icon-only {
   }
 
   header h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+  }
+  header h1:before {
+    content: "⏱️";
+    font-size: 1.25rem;
   }
 }
