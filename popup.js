@@ -711,7 +711,7 @@ function openEditModal(taskIndex, entryIndex) {
   const entry = task.timeEntries[entryIndex];
 
   const modal = document.getElementById("edit-modal");
-  modal.style.display = "block";
+  modal.style.display = "flex";
   document.getElementById("edit-time").value = formatTimeForInput(entry.time);
   document.getElementById("edit-type").value = entry.type;
   
@@ -754,7 +754,7 @@ function saveEdit() {
 
 function openAddHoursModal() {
   const modal = document.getElementById("add-hours-modal");
-  modal.style.display = "block";
+  modal.style.display = "flex";
   document.getElementById("add-hours-input").value = "";
   
   // Scroll to the add hours modal
@@ -786,7 +786,7 @@ function saveAddHours() {
 
 function openRemoveHoursModal() {
   const modal = document.getElementById("remove-hours-modal");
-  modal.style.display = "block";
+  modal.style.display = "flex";
   document.getElementById("remove-hours-input").value = "";
   
   // Scroll to the remove hours modal
@@ -822,7 +822,7 @@ function openTrackingModal(taskIndex, type) {
   state.trackingType = type;
 
   const modal = document.getElementById("tracking-modal");
-  modal.style.display = "block";
+  modal.style.display = "flex";
   document.getElementById("tracking-time").value = formatTimeForInput(new Date());
 
   document.getElementById("tracking-title").textContent =
