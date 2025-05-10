@@ -86,6 +86,11 @@ function loadState() {
               (task.manualTimeAdded || 0) + task.manualTime;
             delete task.manualTime;
           }
+          // Migrate title -> name
+          if (!task.name && task.title) {
+            task.name = task.title;
+            delete task.title;
+          }
           // Ensure notes field exists
           task.notes = task.notes || "";
         });
