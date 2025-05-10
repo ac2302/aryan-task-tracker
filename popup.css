@@ -269,6 +269,14 @@ button.icon-only {
   box-shadow: 0 0 2px rgba(245, 158, 11, 0.5);
 }
 
+.task-dot-red {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--danger-color);
+  box-shadow: 0 0 2px rgba(239, 68, 68, 0.5);
+}
+
 .tasks-header {
   display: flex;
   justify-content: space-between;

@@ -234,10 +234,12 @@ function generateCalendar() {
         // Add task indicators
         const indicator = document.createElement("div");
         indicator.className = "task-indicator";
-        const count = Math.min(state.tasks[dateKey].length, 8);
+        const taskCount = state.tasks[dateKey].length;
+        const count = Math.min(8, taskCount);
+        const redCount = Math.max(0, Math.min(count, taskCount - 8));
         for (let k = 0; k < count; k++) {
           const dot = document.createElement("div");
-          dot.className = "task-dot";
+          dot.className = k < redCount ? "task-dot-red" : "task-dot";
           indicator.appendChild(dot);
         }
         cellContent.appendChild(indicator);
