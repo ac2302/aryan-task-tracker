@@ -974,3 +974,24 @@ function initApp() {
 }
 
 document.addEventListener("DOMContentLoaded", initApp);
+
+// Update date handling to combine calendar date with selected time
+const startDateInput = document.getElementById("start-date");
+const startTimeInput = document.getElementById("start-time");
+
+let startDate = new Date(startDateInput.value);
+let endDate = new Date(document.getElementById("end-date").value);
+
+startDateInput.addEventListener("change", () => {
+  const date = new Date(startDateInput.value);
+  // Preserve existing time while updating date
+  startDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+});
+
+startTimeInput.addEventListener("change", () => {
+  const [hours, minutes] = startTimeInput.value.split(":").map(Number);
+  startDate.setHours(hours);
+  startDate.setMinutes(minutes);
+});
+
+// Repeat similar logic for endDate and its inputs
