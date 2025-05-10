@@ -840,57 +840,127 @@ function closeTrackingModal() {
 
 function confirmTrackingTime() {
   const dateKey = formatDate(state.selectedDate);
-  const idx = state.selectedTaskIndex;
-  const type = state.trackingType;
+  const idx = state.selectedTaskIndex; // Index of the task we are trying to start/stop
+  const type = state.trackingType; // "start" or "stop"
   const timeVal = document.getElementById("tracking-time").value;
+
   if (idx === null || !type || !timeVal) {
     alert("Something went wrong. Please try again.");
     closeTrackingModal();
     return;
   }
+
   const parts = timeVal.split(":");
-  const dt = new Date(state.selectedDate);
+  const dt = new Date(state.selectedDate); // Date from calendar, time from modal
   dt.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+
   if (isNaN(dt.getTime())) {
     alert("Invalid time entered.");
     return;
   }
-  const task = state.tasks[dateKey]?.[idx];
-  if (!task) {
+
+  const taskToModify = state.tasks[dateKey]?.[idx];
+
+  if (!taskToModify) {
     alert("Task not found.");
     closeTrackingModal();
     return;
   }
 
-  // Prevent adding 'start' if already running
-  if (type === "start" && task.timeEntries?.length) {
-    const lastEntry = task.timeEntries[task.timeEntries.length - 1];
-    if (lastEntry.type === "start") {
-      alert("Task is already running.");
+  taskToModify.timeEntries = taskToModify.timeEntries || [];
+
+  if (type === "start") {
+    // Prevent adding 'start' if THIS specific task is already running
+    if (taskToModify.timeEntries.length > 0) {
+      const lastEntryThisTask = taskToModify.timeEntries[taskToModify.timeEntries.length - 1];
+      if (lastEntryThisTask.type === "start") {
+        alert("This task is already running.");
+        closeTrackingModal();
+        return;
+      }
+    }
+
+    // Check for OTHER running tasks
+    const allCurrentlyRunning = getCurrentlyRunningTasks();
+    const otherRunningTasks = allCurrentlyRunning.filter(
+      runningInfo => !(runningInfo.dateKey === dateKey && runningInfo.taskIndex === idx)
+    );
+
+    if (otherRunningTasks.length > 0) {
+      const stopPrevious = window.confirm(
+        "Another task is currently being tracked. Do you want to stop the previous task(s) and start tracking this new task?"
+      );
+
+      if (stopPrevious) {
+        const stopTimeForOthers = new Date(); // Stop previous tasks NOW
+        otherRunningTasks.forEach(runningInfo => {
+          const taskToStop = runningInfo.taskRef; // Direct reference to the task object
+          // Double-check it's indeed running before adding a stop entry
+          if (taskToStop.timeEntries && taskToStop.timeEntries.length > 0) {
+            const lastEntryOther = taskToStop.timeEntries[taskToStop.timeEntries.length - 1];
+            if (lastEntryOther.type === 'start') {
+              taskToStop.timeEntries.push({ type: "stop", time: new Date(stopTimeForOthers.getTime()) }); // Use a copy of stopTimeForOthers
+              taskToStop.timeEntries.sort((a, b) => new Date(a.time) - new Date(b.time));
+            }
+          }
+        });
+      }
+      // If !stopPrevious (user clicks Cancel), the new task will start, and others continue tracking.
+    }
+    // Now, add the 'start' entry for the taskToModify
+    taskToModify.timeEntries.push({ type: "start", time: new Date(dt.getTime()) });
+
+  } else if (type === "stop") {
+    // Prevent adding 'stop' if THIS task is not running or already stopped
+    if (taskToModify.timeEntries.length > 0) {
+      const lastEntry = taskToModify.timeEntries[taskToModify.timeEntries.length - 1];
+      if (lastEntry.type === "stop") { // Already stopped
+        alert("Task is not currently running (already stopped).");
+        closeTrackingModal();
+        return;
+      }
+      // Check if there's a corresponding start for this stop action
+      const startCount = taskToModify.timeEntries.filter(e => e.type === "start").length;
+      const stopCount = taskToModify.timeEntries.filter(e => e.type === "stop").length;
+      if (startCount <= stopCount) { // No pending start to stop, or more stops than starts
+         alert("Task is not currently running (no active start entry).");
+         closeTrackingModal();
+         return;
+      }
+    } else { // No entries at all, so definitely not running
+      alert("Task is not currently running (no entries).");
       closeTrackingModal();
       return;
     }
-  }
-  // Prevent adding 'stop' if not running
-  if (type === "stop" && task.timeEntries?.length) {
-    const lastEntry = task.timeEntries[task.timeEntries.length - 1];
-    if (
-      lastEntry.type === "stop" ||
-      task.timeEntries.filter((e) => e.type === "start").length <=
-        task.timeEntries.filter((e) => e.type === "stop").length
-    ) {
-      alert("Task is not currently running.");
-      closeTrackingModal();
-      return;
-    }
+    // Add the 'stop' entry for the taskToModify
+    taskToModify.timeEntries.push({ type: "stop", time: new Date(dt.getTime()) });
   }
 
-  task.timeEntries = task.timeEntries || [];
-  task.timeEntries.push({ type, time: dt });
-  task.timeEntries.sort((a, b) => a.time - b.time);
+  taskToModify.timeEntries.sort((a, b) => new Date(a.time) - new Date(b.time));
   saveState();
   updateTasksView();
+  generateCalendar(); // Update calendar for any changes in daily totals from stopping other tasks
   closeTrackingModal();
+}
+
+// Helper function to find currently running tasks
+function getCurrentlyRunningTasks() {
+  const running = [];
+  for (const dateKey in state.tasks) {
+    if (state.tasks.hasOwnProperty(dateKey)) {
+      state.tasks[dateKey].forEach((task, index) => {
+        // Ensure timeEntries exist and are sorted (though they should be by other functions)
+        if (task.timeEntries && task.timeEntries.length > 0) {
+          const lastEntry = task.timeEntries[task.timeEntries.length - 1];
+          if (lastEntry.type === "start") {
+            // Store a reference to the task object and its identifiers
+            running.push({ taskRef: task, dateKey, taskIndex: index });
+          }
+        }
+      });
+    }
+  }
+  return running;
 }
 
 // Function to calculate total duration for a single task
