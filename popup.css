@@ -123,6 +123,8 @@ button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 button:hover {
@@ -369,8 +371,16 @@ button.icon-only {
 
 .task-actions {
   display: flex;
-  flex-wrap: wrap;
+  width: 100%;
   gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.task-actions button {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  padding: 0.625rem 0.25rem;
 }
 
 .task-history {
@@ -500,46 +510,33 @@ button.icon-only {
   margin-top: 1.5rem;
 }
 
-.toggle-history {
-  cursor: pointer;
-  color: var(--primary-color);
-  font-size: 0.875rem;
-  margin-top: 0.75rem;
-  transition: color 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.history-btn {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
 }
 
-.toggle-history:before {
-  /* content: "📋"; */
-  font-size: 0.875rem;
+.history-btn:hover {
+  filter: brightness(1.1);
 }
 
-.toggle-history:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
+.history-btn.active {
+  background-color: var(--accent-color);
+  color: #000;
 }
 
 /* Notes Section Styles */
-.toggle-notes-btn {
-  cursor: pointer;
-  color: var(--accent-color);
-  font-size: 0.875rem;
-  margin-top: 0.75rem;
-  transition: color 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: none;
-  padding: 0;
+.notes-btn {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
 }
 
-.toggle-notes-btn:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
-  background-color: transparent;
+.notes-btn:hover {
+  filter: brightness(1.1);
+}
+
+.notes-btn.active {
+  /* background-color: var(--primary-color); */
+  color: white;
 }
 
 .task-notes-container {

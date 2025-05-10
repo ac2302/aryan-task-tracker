@@ -454,25 +454,39 @@ function renderTask(task, index) {
 
   const startStopBtn = document.createElement("button");
   startStopBtn.classList.add(running ? "secondary" : "success"); // Use success for start, secondary for stop
+  startStopBtn.title = running ? "Stop Tracking" : "Start Tracking";
   startStopBtn.innerHTML = running
-    ? '<i class="fas fa-stop"></i> Stop Tracking'
-    : '<i class="fas fa-play"></i> Start Tracking';
+    ? '<i class="fas fa-stop"></i>'
+    : '<i class="fas fa-play"></i>';
   startStopBtn.addEventListener("click", () => {
     openTrackingModal(index, running ? "stop" : "start");
   });
 
   const addTimeBtn = document.createElement("button");
   addTimeBtn.classList.add("secondary");
-  addTimeBtn.innerHTML = '<i class="fas fa-plus-square"></i> Add Manual Time';
+  addTimeBtn.title = "Add Manual Time";
+  addTimeBtn.innerHTML = '<i class="fas fa-plus-square"></i>';
   addTimeBtn.addEventListener("click", () => {
     state.selectedTaskIndex = index;
     openAddHoursModal();
   });
 
+  // Create history button
+  const historyBtn = document.createElement("button");
+  historyBtn.classList.add("history-btn");
+  historyBtn.title = "View Time History";
+  historyBtn.innerHTML = '<i class="fas fa-history"></i>';
+  
+  // Create notes button
+  const notesBtn = document.createElement("button");
+  notesBtn.classList.add("notes-btn");
+  notesBtn.title = "Toggle Notes";
+  notesBtn.innerHTML = '<i class="fas fa-sticky-note"></i>';
+  
   const removeTimeBtn = document.createElement("button");
-  removeTimeBtn.classList.add("secondary", "danger"); // Use danger for remove
-  removeTimeBtn.innerHTML =
-    '<i class="fas fa-minus-square"></i> Remove Manual Time';
+  removeTimeBtn.classList.add("secondary"); // Changed to match add time button
+  removeTimeBtn.title = "Remove Manual Time";
+  removeTimeBtn.innerHTML = '<i class="fas fa-minus-square"></i>';
   removeTimeBtn.addEventListener("click", () => {
     state.selectedTaskIndex = index;
     openRemoveHoursModal();
@@ -480,7 +494,8 @@ function renderTask(task, index) {
 
   const deleteBtn = document.createElement("button");
   deleteBtn.classList.add("danger"); // Use danger for delete
-  deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+  deleteBtn.title = "Delete Task";
+  deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
   deleteBtn.addEventListener("click", () => {
     if (!confirm("Are you sure you want to delete this task?")) return;
     const dateKey = formatDate(state.selectedDate);
@@ -491,43 +506,57 @@ function renderTask(task, index) {
     generateCalendar(); // Regenerate calendar to update dot
   });
 
-  actions.appendChild(startStopBtn);
-  actions.appendChild(addTimeBtn);
-  actions.appendChild(removeTimeBtn);
-  actions.appendChild(deleteBtn);
-
-  taskItem.appendChild(header);
-  taskItem.appendChild(actions);
-
-  const toggleHistory = document.createElement("div");
-  toggleHistory.className = "toggle-history";
-  toggleHistory.innerHTML = '<i class="fas fa-history"></i> View Time History';
+  // Configure toggle state for history button
   if (
     task.timeEntries?.length ||
     task.manualTimeAdded > 0 ||
     task.manualTimeRemoved > 0
   ) {
-    // Check both manual added/removed
-    toggleHistory.addEventListener("click", (e) => {
+    historyBtn.addEventListener("click", () => {
       const existing = taskItem.querySelector(".task-history");
       if (existing) {
         existing.remove();
-        e.target.innerHTML = '<i class="fas fa-history"></i> View Time History';
+        historyBtn.classList.remove("active");
       } else {
         const historyElement = renderTimeHistory(task, index);
         taskItem.appendChild(historyElement);
-        e.target.innerHTML = '<i class="fas fa-history"></i> Hide Time History';
+        historyBtn.classList.add("active");
         // Scroll to the time history section
         setTimeout(() => scrollToElement(historyElement), 50);
       }
     });
-    taskItem.appendChild(toggleHistory);
+  } else {
+    historyBtn.disabled = true;
+    historyBtn.style.opacity = "0.5";
+    historyBtn.title = "No history available";
   }
+  
+  // Configure notes button with toggle state
+  notesBtn.addEventListener("click", () => {
+    const notesContainer = taskItem.querySelector(".task-notes-container");
+    if (notesContainer) {
+      notesContainer.classList.toggle("visible");
+      
+      if (notesContainer.classList.contains("visible")) {
+        notesBtn.classList.add("active");
+        // Scroll to notes section when it becomes visible
+        setTimeout(() => scrollToElement(notesContainer), 50);
+      } else {
+        notesBtn.classList.remove("active");
+      }
+    }
+  });
+  
+  // Add buttons in the requested order
+  actions.appendChild(startStopBtn);
+  actions.appendChild(addTimeBtn);
+  actions.appendChild(removeTimeBtn);
+  actions.appendChild(historyBtn);
+  actions.appendChild(notesBtn);
+  actions.appendChild(deleteBtn);
 
-  // Notes Section
-  const toggleNotesBtn = document.createElement("button");
-  toggleNotesBtn.className = "toggle-notes-btn";
-  toggleNotesBtn.innerHTML = '<i class="fas fa-sticky-note"></i> Toggle Notes';
+  taskItem.appendChild(header);
+  taskItem.appendChild(actions);
 
   const notesContainer = document.createElement("div");
   notesContainer.className = "task-notes-container";
@@ -578,22 +607,9 @@ function renderTask(task, index) {
     }, 500)
   );
 
-  toggleNotesBtn.addEventListener("click", () => {
-    notesContainer.classList.toggle("visible");
-    toggleNotesBtn.innerHTML = notesContainer.classList.contains("visible")
-      ? '<i class="fas fa-sticky-note"></i> Hide Notes'
-      : '<i class="fas fa-sticky-note"></i> Show Notes';
-
-    // Scroll to notes section when it becomes visible
-    if (notesContainer.classList.contains("visible")) {
-      setTimeout(() => scrollToElement(notesContainer), 50);
-    }
-  });
-
   notesContainer.appendChild(notesTextarea);
   notesContainer.appendChild(saveIndicator);
 
-  taskItem.appendChild(toggleNotesBtn);
   taskItem.appendChild(notesContainer);
 
   // Call autoExpandTextarea after notesTextarea is in the DOM and value is set
