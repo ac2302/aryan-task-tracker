@@ -62,6 +62,13 @@ function formatTimeHHMM(ms) {
   )}`;
 }
 
+// Helper function for scrolling to elements
+function scrollToElement(element, options = { behavior: "smooth", block: "start" }) {
+  if (element) {
+    element.scrollIntoView(options);
+  }
+}
+
 // Storage functions
 function saveState() {
   localStorage.setItem("taskTrackerData", JSON.stringify(state.tasks));
@@ -492,8 +499,11 @@ function renderTask(task, index) {
         existing.remove();
         e.target.innerHTML = '<i class="fas fa-history"></i> View Time History';
       } else {
-        taskItem.appendChild(renderTimeHistory(task, index));
+        const historyElement = renderTimeHistory(task, index);
+        taskItem.appendChild(historyElement);
         e.target.innerHTML = '<i class="fas fa-history"></i> Hide Time History';
+        // Scroll to the time history section
+        setTimeout(() => scrollToElement(historyElement), 50);
       }
     });
     taskItem.appendChild(toggleHistory);
@@ -524,6 +534,11 @@ function renderTask(task, index) {
     toggleNotesBtn.innerHTML = notesContainer.classList.contains("visible")
       ? '<i class="fas fa-sticky-note"></i> Hide Notes'
       : '<i class="fas fa-sticky-note"></i> Show Notes';
+    
+    // Scroll to notes section when it becomes visible
+    if (notesContainer.classList.contains("visible")) {
+      setTimeout(() => scrollToElement(notesContainer), 50);
+    }
   });
 
   saveNotesBtn.addEventListener("click", () => {
@@ -688,17 +703,20 @@ function editTaskName(taskIndex, currentName) {
 }
 
 function openEditModal(taskIndex, entryIndex) {
-  const modal = document.getElementById("edit-modal");
-  const timeInput = document.getElementById("edit-time");
-  const typeSelect = document.getElementById("edit-type");
-  const dateKey = formatDate(state.selectedDate);
-  const entry = state.tasks[dateKey]?.[taskIndex]?.timeEntries?.[entryIndex];
-  if (!entry) return;
-  timeInput.value = formatTimeForInput(entry.time);
-  typeSelect.value = entry.type;
   state.selectedTaskIndex = taskIndex;
   state.selectedHistoryEntry = entryIndex;
-  modal.style.display = "flex";
+
+  const dateKey = formatDate(state.selectedDate);
+  const task = state.tasks[dateKey][taskIndex];
+  const entry = task.timeEntries[entryIndex];
+
+  const modal = document.getElementById("edit-modal");
+  modal.style.display = "block";
+  document.getElementById("edit-time").value = formatTimeForInput(entry.time);
+  document.getElementById("edit-type").value = entry.type;
+  
+  // Scroll to the edit modal
+  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
 }
 
 function closeEditModal() {
@@ -735,9 +753,12 @@ function saveEdit() {
 }
 
 function openAddHoursModal() {
-  document.getElementById("add-hours-input").value = 0;
-  document.getElementById("add-minutes-input").value = 0;
-  document.getElementById("add-hours-modal").style.display = "flex";
+  const modal = document.getElementById("add-hours-modal");
+  modal.style.display = "block";
+  document.getElementById("add-hours-input").value = "";
+  
+  // Scroll to the add hours modal
+  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
 }
 
 function closeAddHoursModal() {
@@ -764,9 +785,12 @@ function saveAddHours() {
 }
 
 function openRemoveHoursModal() {
-  document.getElementById("remove-hours-input").value = 0;
-  document.getElementById("remove-minutes-input").value = 0;
-  document.getElementById("remove-hours-modal").style.display = "flex";
+  const modal = document.getElementById("remove-hours-modal");
+  modal.style.display = "block";
+  document.getElementById("remove-hours-input").value = "";
+  
+  // Scroll to the remove hours modal
+  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
 }
 
 function closeRemoveHoursModal() {
@@ -796,13 +820,16 @@ function saveRemoveHours() {
 function openTrackingModal(taskIndex, type) {
   state.selectedTaskIndex = taskIndex;
   state.trackingType = type;
+
   const modal = document.getElementById("tracking-modal");
-  document.getElementById("tracking-modal-title").textContent =
-    type === "start" ? "Confirm Start Time" : "Confirm Stop Time";
-  document.getElementById("tracking-time").value = formatTimeForInput(
-    new Date()
-  );
-  modal.style.display = "flex";
+  modal.style.display = "block";
+  document.getElementById("tracking-time").value = formatTimeForInput(new Date());
+
+  document.getElementById("tracking-title").textContent =
+    type === "start" ? "Start Tracking" : "Stop Tracking";
+    
+  // Scroll to the tracking modal
+  setTimeout(() => scrollToElement(modal, { behavior: "smooth", block: "center" }), 50);
 }
 
 function closeTrackingModal() {
@@ -1097,6 +1124,16 @@ function addTask() {
   saveState();
   updateTasksView();
   generateCalendar(); // Re-generate calendar to update daily totals if shown
+  
+  // Scroll to the newly added task
+  setTimeout(() => {
+    const taskItems = document.querySelectorAll('.task-item');
+    if (taskItems.length > 0) {
+      // Last task item is the one we just added
+      const newTaskItem = taskItems[taskItems.length - 1];
+      scrollToElement(newTaskItem);
+    }
+  }, 100); // Small delay to ensure DOM is updated
 }
 
 function initApp() {
