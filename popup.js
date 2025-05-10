@@ -72,6 +72,14 @@ function scrollToElement(
   }
 }
 
+// Helper function to make textarea auto-expand
+function autoExpandTextarea(textarea) {
+  // Reset height to auto to ensure it shrinks when text is deleted
+  textarea.style.height = "auto";
+  // Set height to scrollHeight to fit content
+  textarea.style.height = textarea.scrollHeight + "px";
+}
+
 // Storage functions
 function saveState() {
   localStorage.setItem("taskTrackerData", JSON.stringify(state.tasks));
@@ -310,7 +318,7 @@ function updateTasksView() {
 function renderTask(task, index) {
   const taskItem = document.createElement("div");
   taskItem.className = "task-item";
-  taskItem.dataset.taskIndex = index;
+  taskItem.dataset.taskId = task.id; // Use the unique task ID
 
   // Calculate totalTime & running status
   let tracked = 0;
@@ -523,13 +531,21 @@ function renderTask(task, index) {
 
   const notesContainer = document.createElement("div");
   notesContainer.className = "task-notes-container";
+  if (task.notes && task.notes.trim() !== "") {
+    notesContainer.classList.add("visible");
+  }
 
   const notesTextarea = document.createElement("textarea");
-  notesTextarea.className = "task-notes-input";
-  notesTextarea.placeholder = "Add notes here...";
-  notesTextarea.value = task.notes || "";
+  notesTextarea.placeholder = "Add notes...";
+  notesTextarea.value = task.notes;
+  notesTextarea.id = `notes-textarea-${task.id}`; // Assign a unique ID
 
-  // Add debounce function
+  // Auto-expand functionality
+  notesTextarea.addEventListener("input", function () {
+    autoExpandTextarea(this);
+  });
+
+  // Debounced save for notes
   const debounce = (func, wait) => {
     let timeout;
     return (...args) => {
@@ -579,6 +595,18 @@ function renderTask(task, index) {
 
   taskItem.appendChild(toggleNotesBtn);
   taskItem.appendChild(notesContainer);
+
+  // Call autoExpandTextarea after notesTextarea is in the DOM and value is set
+  // Needs a slight delay for the DOM to update if notesContainer was hidden
+  if (notesContainer.classList.contains("visible")) {
+    // If visible, can call directly, but might need a timeout if initial rendering is tricky
+    setTimeout(() => autoExpandTextarea(notesTextarea), 0);
+  } else {
+    // If not visible, it will be called when it becomes visible via the toggle button
+    // Or, we can call it here and trust the browser to calculate correctly even if not displayed.
+    // Let's try calling it and see. If not, we'll adjust.
+    setTimeout(() => autoExpandTextarea(notesTextarea), 0);
+  }
 
   return taskItem;
 }

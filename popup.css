@@ -564,8 +564,9 @@ button.icon-only {
   color: var(--text-color);
   font-size: 0.875rem;
   font-family: inherit;
-  resize: vertical;
+  resize: none;
   margin-bottom: 0.75rem;
+  overflow-y: hidden;
 }
 
 .task-notes-container textarea:focus {
