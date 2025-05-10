@@ -51,6 +51,17 @@ function formatDuration(ms) {
   }
 }
 
+function formatTimeHHMM(ms) {
+  if (!ms) return "00:00";
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}`;
+}
+
 // Storage functions
 function saveState() {
   localStorage.setItem("taskTrackerData", JSON.stringify(state.tasks));
@@ -137,7 +148,7 @@ function generateCalendar() {
         // If task is still running
         const last = task.timeEntries[task.timeEntries.length - 1];
         if (last && last.type === "start") {
-          tracked += new Date().getTime() - last.time.getTime();
+          tracked += new Date().getTime() - lastStart.getTime();
         }
       }
 
@@ -148,18 +159,6 @@ function generateCalendar() {
     });
 
     return totalMs;
-  }
-
-  // Helper function to format time in hh:mm format
-  function formatTimeHHMM(ms) {
-    if (!ms) return "00:00";
-    const totalMinutes = Math.floor(ms / 60000);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0"
-    )}`;
   }
 
   for (let i = 0; i < grandTotal / 7; i++) {
@@ -333,7 +332,7 @@ function renderTask(task, index) {
 
   const title = document.createElement("div");
   title.className = "task-title";
-  title.textContent = task.title;
+  title.textContent = task.name;
 
   const editIcon = document.createElement("i");
   editIcon.className = "fas fa-edit";
@@ -343,7 +342,7 @@ function renderTask(task, index) {
   editIcon.title = "Edit task name";
   editIcon.addEventListener("click", (e) => {
     e.stopPropagation();
-    editTaskTitle(index, task.title);
+    editTaskName(index, task.name);
   });
 
   const copyIcon = document.createElement("i");
@@ -364,7 +363,7 @@ function renderTask(task, index) {
       (hours && minutes ? ", " : "") +
       (minutes ? `${minutes} minute${minutes > 1 ? "s" : ""}` : "0 minutes");
 
-    const textToCopy = `${task.title}: ${timeString}`;
+    const textToCopy = `${task.name}: ${timeString}`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       // Show a brief notification
@@ -669,15 +668,15 @@ function renderTimeHistory(task, taskIndex) {
   return section;
 }
 
-function editTaskTitle(taskIndex, currentTitle) {
-  const newTitle = prompt("Edit task name:", currentTitle);
+function editTaskName(taskIndex, currentName) {
+  const newName = prompt("Edit task name:", currentName);
   if (
-    newTitle !== null &&
-    newTitle.trim() !== "" &&
-    newTitle !== currentTitle
+    newName !== null &&
+    newName.trim() !== "" &&
+    newName !== currentName
   ) {
     const dateKey = formatDate(state.selectedDate);
-    state.tasks[dateKey][taskIndex].title = newTitle.trim();
+    state.tasks[dateKey][taskIndex].name = newName.trim();
     saveState();
     updateTasksView();
   }
@@ -862,6 +861,64 @@ function confirmTrackingTime() {
   closeTrackingModal();
 }
 
+// Function to calculate total duration for a single task
+function calculateTaskDuration(task) {
+  let trackedMs = 0;
+  let lastStart = null;
+
+  if (task.timeEntries?.length) {
+    task.timeEntries.forEach((entry) => {
+      if (entry.type === "start") {
+        lastStart = entry.time;
+      } else if (entry.type === "stop" && lastStart) {
+        trackedMs += entry.time.getTime() - lastStart.getTime();
+        lastStart = null;
+      }
+    });
+
+    // If task is still running (though for a daily report, this might imply it ran all day or was forgotten)
+    // For simplicity, we'll assume tasks are stopped for a daily report, or we only count completed intervals.
+    // If the last entry is a start and it's the selected day, it might be considered running until midnight or current time if it's today.
+    // For this implementation, we will only count completed start-stop pairs.
+  }
+
+  const manualAdded = task.manualTimeAdded || 0;
+  const manualRemoved = task.manualTimeRemoved || 0;
+  return Math.max(0, trackedMs + manualAdded - manualRemoved);
+}
+
+// Function to copy task durations for the selected day
+async function copyTaskDurations() {
+  const dateKey = formatDate(state.selectedDate);
+  const tasksForDay = state.tasks[dateKey] || [];
+
+  if (tasksForDay.length === 0) {
+    alert("No tasks to copy for the selected day.");
+    return;
+  }
+
+  const dayOfWeek = state.selectedDate.toLocaleDateString("en-US", { weekday: 'long' });
+  const day = state.selectedDate.getDate();
+  const month = state.selectedDate.toLocaleDateString("en-US", { month: 'long' });
+  const year = state.selectedDate.getFullYear();
+
+  let report = `${dayOfWeek} ${String(day).padStart(2, '0')} ${month} ${year}:\n`;
+
+  tasksForDay.forEach(task => {
+    const durationMs = calculateTaskDuration(task);
+    const durationFormatted = formatTimeHHMM(durationMs);
+    report += `- ${task.name} (${durationFormatted})\n`;
+  });
+
+  try {
+    await navigator.clipboard.writeText(report);
+    alert("Task durations copied to clipboard!");
+  } catch (err) {
+    console.error("Failed to copy task durations: ", err);
+    alert("Failed to copy. See console for details.");
+  }
+}
+
 // Event listeners
 function addEventListeners() {
   document.getElementById("prev-month").addEventListener("click", () => {
@@ -945,25 +1002,55 @@ function addEventListeners() {
     if (e.target === removeH) closeRemoveHoursModal();
     if (e.target === track) closeTrackingModal();
   });
+
+  // Add event listener for the new copy button
+  const copyBtn = document.getElementById("copy-task-durations-btn");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", copyTaskDurations);
+  } else {
+    console.error("Copy Task Durations button not found in the DOM.");
+  }
 }
 
 function addTask() {
-  const input = document.getElementById("new-task-input");
-  const title = input.value.trim();
-  if (!title) return;
+  const newTaskInput = document.getElementById("new-task-input");
+  
+  // Add null check for newTaskInput
+  if (!newTaskInput) {
+    console.error("Error: Could not find element with ID 'new-task-input'.");
+    return; 
+  }
+
+  const taskName = newTaskInput.value.trim();
+  if (!taskName) {
+    alert("Please enter a task name.");
+    return;
+  }
+
   const dateKey = formatDate(state.selectedDate);
-  state.tasks[dateKey] = state.tasks[dateKey] || [];
+  if (!state.tasks[dateKey]) {
+    state.tasks[dateKey] = [];
+  }
+
+  // Check for duplicate task names on the same day
+  if (state.tasks[dateKey].some(task => task.name.toLowerCase() === taskName.toLowerCase())) {
+    alert("A task with this name already exists for the selected day. Please use a different name.");
+    return;
+  }
+
   state.tasks[dateKey].push({
-    title,
+    name: taskName,
     timeEntries: [],
     manualTimeAdded: 0,
     manualTimeRemoved: 0,
-    notes: "", // Add notes field
+    notes: "", // Initialize notes field
+    id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Unique ID
   });
-  input.value = "";
+
+  newTaskInput.value = "";
   saveState();
   updateTasksView();
-  generateCalendar();
+  generateCalendar(); // Re-generate calendar to update daily totals if shown
 }
 
 function initApp() {
