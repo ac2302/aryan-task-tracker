@@ -898,6 +898,7 @@ async function copyTaskDurations() {
   const tasksForDay = state.tasks[dateKey] || [];
 
   if (tasksForDay.length === 0) {
+    // Keep alert for empty days since it's more noticeable
     alert("No tasks to copy for the selected day.");
     return;
   }
@@ -917,10 +918,50 @@ async function copyTaskDurations() {
 
   try {
     await navigator.clipboard.writeText(report);
-    alert("Task durations copied to clipboard!");
+    
+    // Create notification container if it doesn't exist
+    let notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+      notificationContainer = document.createElement('div');
+      notificationContainer.id = 'notification-container';
+      notificationContainer.style.position = 'fixed';
+      notificationContainer.style.bottom = '20px';
+      notificationContainer.style.left = '0';
+      notificationContainer.style.width = '100%';
+      notificationContainer.style.display = 'flex';
+      notificationContainer.style.justifyContent = 'center';
+      notificationContainer.style.zIndex = '1000';
+      notificationContainer.style.pointerEvents = 'none';
+      document.body.appendChild(notificationContainer);
+    }
+    
+    // Create and show toast notification
+    const notification = document.createElement('div');
+    notification.className = 'copy-notification';
+    notification.textContent = 'Task durations copied to clipboard!';
+    notificationContainer.appendChild(notification);
+    
+    // Remove notification after animation completes (3s)
+    setTimeout(() => {
+      notification.remove();
+      // Remove container if empty
+      if (notificationContainer.children.length === 0) {
+        notificationContainer.remove();
+      }
+    }, 3000);
+    
   } catch (err) {
     console.error("Failed to copy task durations: ", err);
-    alert("Failed to copy. See console for details.");
+    
+    // Show error notification
+    const notification = document.createElement('div');
+    notification.className = 'copy-notification';
+    notification.textContent = 'Failed to copy durations';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 }
 
