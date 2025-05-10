@@ -378,7 +378,9 @@ function renderTask(task, index) {
       (hours && minutes ? ", " : "") +
       (minutes ? `${minutes} minute${minutes > 1 ? "s" : ""}` : "0 minutes");
 
-    const textToCopy = `${task.name}: ${timeString}`;
+    const textToCopy = `${task.name}: ${timeString}\n${
+      task.notes ? task.notes + "\n" : ""
+    }`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       // Show a brief notification
