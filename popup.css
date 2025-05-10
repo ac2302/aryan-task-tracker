@@ -128,7 +128,7 @@ button {
 }
 
 button:hover {
-  background-color: var(--primary-hover);
+  filter: brightness(1.1);
   transform: translateY(-1px);
 }
 
@@ -383,6 +383,11 @@ button.icon-only {
   padding: 0.625rem 0.25rem;
 }
 
+.task-actions button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
 .task-history {
   margin-top: 1rem;
   border-top: 1px dashed var(--border-color);
@@ -406,6 +411,11 @@ button.icon-only {
 .history-entry button {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+}
+
+.history-entry button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .modal {
@@ -467,7 +477,7 @@ button.icon-only {
 }
 
 .close-modal:hover {
-  color: var(--text-color);
+  filter: brightness(1.1);
 }
 
 .form-group {

@@ -453,7 +453,7 @@ function renderTask(task, index) {
   actions.className = "task-actions";
 
   const startStopBtn = document.createElement("button");
-  startStopBtn.classList.add(running ? "secondary" : "success"); // Use success for start, secondary for stop
+  startStopBtn.classList.add(running ? "accent" : "success"); // Use success for start, accent for stop
   startStopBtn.title = running ? "Stop Tracking" : "Start Tracking";
   startStopBtn.innerHTML = running
     ? '<i class="fas fa-stop"></i>'
