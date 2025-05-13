@@ -332,7 +332,8 @@ function renderTask(task, index) {
       if (entry.type === "start") {
         lastStartTimeForPairing = entry.time; // Potential start of a pair or current session
       } else if (entry.type === "stop" && lastStartTimeForPairing) {
-        baseTrackedTime += entry.time.getTime() - lastStartTimeForPairing.getTime();
+        baseTrackedTime +=
+          entry.time.getTime() - lastStartTimeForPairing.getTime();
         lastStartTimeForPairing = null; // This period is now complete
       }
     });
@@ -351,7 +352,8 @@ function renderTask(task, index) {
   const calculateCurrentTotal = () => {
     let currentTracked = baseTrackedTime;
     if (running && currentSessionStartTime) {
-      currentTracked += new Date().getTime() - currentSessionStartTime.getTime();
+      currentTracked +=
+        new Date().getTime() - currentSessionStartTime.getTime();
     }
     return Math.max(0, currentTracked + manualAdded - manualRemoved);
   };
@@ -435,12 +437,15 @@ function renderTask(task, index) {
   header.appendChild(timeEl);
 
   // Set up live timer update if task is running
-  if (running && currentSessionStartTime) { // Check currentSessionStartTime as well
+  if (running && currentSessionStartTime) {
+    // Check currentSessionStartTime as well
     const intervalId = setInterval(() => {
       // Get the timeEl reference again in case DOM has changed, as per original logic
       const timeElementToUpdate = taskItem.querySelector(".task-time");
       if (timeElementToUpdate) {
-        timeElementToUpdate.textContent = formatDuration(calculateCurrentTotal()); // Update using helper
+        timeElementToUpdate.textContent = formatDuration(
+          calculateCurrentTotal()
+        ); // Update using helper
       } else {
         // If element doesn't exist anymore, clear the interval
         clearInterval(intervalId);
