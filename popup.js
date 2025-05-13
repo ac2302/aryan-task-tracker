@@ -321,30 +321,40 @@ function renderTask(task, index) {
   taskItem.dataset.taskId = task.id; // Use the unique task ID
 
   // Calculate totalTime & running status
-  let tracked = 0;
-  let running = false,
-    lastStart = null;
+  let baseTrackedTime = 0; // Sum of all completed tracking periods
+  let currentSessionStartTime = null; // The 'time' object of the current "start" entry
+  let running = false;
+
   if (task.timeEntries?.length) {
     task.timeEntries.sort((a, b) => a.time - b.time);
+    let lastStartTimeForPairing = null;
     task.timeEntries.forEach((entry) => {
       if (entry.type === "start") {
-        lastStart = entry.time;
-      } else if (entry.type === "stop" && lastStart) {
-        tracked += entry.time.getTime() - lastStart.getTime();
-        lastStart = null;
+        lastStartTimeForPairing = entry.time; // Potential start of a pair or current session
+      } else if (entry.type === "stop" && lastStartTimeForPairing) {
+        baseTrackedTime += entry.time.getTime() - lastStartTimeForPairing.getTime();
+        lastStartTimeForPairing = null; // This period is now complete
       }
     });
-    const last = task.timeEntries[task.timeEntries.length - 1];
-    if (last && last.type === "start") {
+
+    const lastEntry = task.timeEntries[task.timeEntries.length - 1];
+    if (lastEntry && lastEntry.type === "start") {
       running = true;
-      lastStart = last.time;
-      tracked += new Date().getTime() - lastStart.getTime();
+      currentSessionStartTime = lastEntry.time; // This is the T_current_session_start
     }
   }
-  // Manual time
+
   const manualAdded = task.manualTimeAdded || 0;
   const manualRemoved = task.manualTimeRemoved || 0;
-  let total = Math.max(0, tracked + manualAdded - manualRemoved);
+
+  // Function to calculate total time, used for initial display and interval updates
+  const calculateCurrentTotal = () => {
+    let currentTracked = baseTrackedTime;
+    if (running && currentSessionStartTime) {
+      currentTracked += new Date().getTime() - currentSessionStartTime.getTime();
+    }
+    return Math.max(0, currentTracked + manualAdded - manualRemoved);
+  };
 
   const header = document.createElement("div");
   header.className = "task-header";
@@ -380,8 +390,8 @@ function renderTask(task, index) {
     e.stopPropagation();
 
     // Format the time string
-    const hours = Math.floor(total / 3600000);
-    const minutes = Math.floor((total % 3600000) / 60000);
+    const hours = Math.floor(calculateCurrentTotal() / 3600000);
+    const minutes = Math.floor((calculateCurrentTotal() % 3600000) / 60000);
 
     const timeString =
       (hours ? `${hours} hour${hours > 1 ? "s" : ""}` : "") +
@@ -419,25 +429,18 @@ function renderTask(task, index) {
 
   const timeEl = document.createElement("div");
   timeEl.className = "task-time";
-  timeEl.textContent = formatDuration(total);
+  timeEl.textContent = formatDuration(calculateCurrentTotal()); // Initial display using helper
 
   header.appendChild(titleContainer);
   header.appendChild(timeEl);
 
   // Set up live timer update if task is running
-  if (running && lastStart) {
+  if (running && currentSessionStartTime) { // Check currentSessionStartTime as well
     const intervalId = setInterval(() => {
-      const now = new Date().getTime();
-      const updatedTracked = tracked + (now - lastStart.getTime());
-      const updatedTotal = Math.max(
-        0,
-        updatedTracked + manualAdded - manualRemoved
-      );
-
-      // Get the timeEl reference again in case DOM has changed
-      const timeElement = taskItem.querySelector(".task-time");
-      if (timeElement) {
-        timeElement.textContent = formatDuration(updatedTotal);
+      // Get the timeEl reference again in case DOM has changed, as per original logic
+      const timeElementToUpdate = taskItem.querySelector(".task-time");
+      if (timeElementToUpdate) {
+        timeElementToUpdate.textContent = formatDuration(calculateCurrentTotal()); // Update using helper
       } else {
         // If element doesn't exist anymore, clear the interval
         clearInterval(intervalId);
