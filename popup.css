@@ -683,3 +683,7 @@ button.icon-only {
     font-size: 1.25rem;
   }
 }
+
+.spacer {
+  height: 0.5rem;
+}
